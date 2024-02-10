@@ -4,23 +4,16 @@ var (
 	IsVerbose = false
 )
 
-func (t *Token) IsEmpty() bool {
-	return t == nil || (t.Type == TokenType_Unknown && t.Val == "")
-}
-
-type AstNode struct {
-	Type TokenType
-	Val  string
-
-	Left  *AstNode
-	Right *AstNode
-}
-
 type Regexl struct {
 	Query string
 }
 
 func (rl *Regexl) Compile() error {
+
+	_, err := ParseQuery(rl.Query)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
