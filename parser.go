@@ -126,7 +126,7 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 			}
 
 			// Handle backslash in string as it might escape the end string character
-			nextRune, err := p.getNextRuneByByteIndex(runeStartByteIndex)
+			nextRune, err := p.GetNextRuneByByteIndex(runeStartByteIndex)
 			if err != nil {
 				return tokens, &ParserError{
 					Err: err,
@@ -188,7 +188,7 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 
 		case '-':
 
-			nextRune, err := p.getNextRuneByByteIndex(runeStartByteIndex)
+			nextRune, err := p.GetNextRuneByByteIndex(runeStartByteIndex)
 			if err != nil {
 				return tokens, &ParserError{
 					Err: err,
@@ -213,7 +213,7 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 	return tokens, pErr
 }
 
-func (p *Parser) getRuneByByteIndex(index int) (rune, error) {
+func (p *Parser) GetRuneByByteIndex(index int) (rune, error) {
 
 	r, _ := utf8.DecodeRuneInString(p.Query[index:])
 	if r == utf8.RuneError {
@@ -223,7 +223,7 @@ func (p *Parser) getRuneByByteIndex(index int) (rune, error) {
 	return r, nil
 }
 
-func (p *Parser) getNextRuneByByteIndex(index int) (rune, error) {
+func (p *Parser) GetNextRuneByByteIndex(index int) (rune, error) {
 
 	if index >= len(p.Query) {
 		return 0, fmt.Errorf("getting next rune failed because index is out of range. index=%d; queryLen=%d", index, len(p.Query))
