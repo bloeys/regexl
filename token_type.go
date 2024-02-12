@@ -27,7 +27,7 @@ const (
 	TokenType_Bool
 	TokenType_Plus
 	TokenType_Comment
-	TokenType_Object_Param_Key
+	TokenType_Object_Param
 	TokenType_Function_Name
 	TokenType_Keyword
 )

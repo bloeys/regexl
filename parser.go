@@ -63,28 +63,36 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 
 	tokens = make([]Token, 0, 50)
 
-	// getToken := func(index int) *Token {
+	getToken := func(index int) *Token {
 
-	// 	if len(tokens) == 0 {
-	// 		return nil
-	// 	}
+		if len(tokens) == 0 {
+			return nil
+		}
 
-	// 	if index < 0 {
-	// 		return &tokens[len(tokens)+index]
-	// 	}
+		if index < 0 {
+			return &tokens[len(tokens)+index]
+		}
 
-	// 	return &tokens[index]
-	// }
+		return &tokens[index]
+	}
 
-	addToken := func(t *Token) {
+	/*
+		Trims surrounding space of the token's value, then if the token is not empty it appends a copy of it to the list of tokens, and then makes the passed token empty.
+
+		Returns the last appended token using getToken(-1). The just passed token is returned (its copy appended to the array) if the passed token wasn't empty, otherwise the last appended token is returned.
+		The return can be null if no tokens have been appended
+		or whatever the previous
+	*/
+	addToken := func(t *Token) (latestToken *Token) {
 
 		t.Val = strings.TrimSpace(t.Val)
 		if t.IsEmpty() {
-			return
+			return getToken(-1)
 		}
 
 		tokens = append(tokens, *t)
 		t.MakeEmpty()
+		return getToken(-1)
 	}
 
 	/*
@@ -96,7 +104,7 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 	*/
 	tryAssignTypeToPossibleLiteralToken := func(t *Token) {
 
-		if t.Type != TokenType_Unknown || t.IsEmpty() {
+		if t.IsEmpty() || t.Type != TokenType_Unknown {
 			return
 		}
 
@@ -177,21 +185,23 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 			fallthrough
 		case ' ':
 
-			tryAssignTypeToPossibleLiteralToken(token)
+			prevToken := addToken(token)
+			tryAssignTypeToPossibleLiteralToken(prevToken)
 
-			// Handle keywords
-			if token.Type == TokenType_Unknown {
+			// Handle keywords and use is empty to protect against nil
+			if !prevToken.IsEmpty() && prevToken.Type == TokenType_Unknown {
 
-				if slices.Contains(keywords, token.Val) {
-					token.Type = TokenType_Keyword
+				if slices.Contains(keywords, prevToken.Val) {
+					prevToken.Type = TokenType_Keyword
 				}
 			}
 
-			addToken(token)
-
 		case ':':
-			token.Type = TokenType_Object_Param_Key
-			addToken(token)
+
+			prevToken := addToken(token)
+			if !prevToken.IsEmpty() {
+				prevToken.Type = TokenType_Object_Param
+			}
 
 			token.Val = ":"
 			token.Type = TokenType_Colon
@@ -208,9 +218,8 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 
 		case ',':
 
-			// Try to assign a type to previous value (this is for when ',' is after an object param value)
-			tryAssignTypeToPossibleLiteralToken(token)
-			addToken(token)
+			prevToken := addToken(token)
+			tryAssignTypeToPossibleLiteralToken(prevToken)
 
 			token.Val = ","
 			token.Type = TokenType_Comma
@@ -218,8 +227,10 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 			addToken(token)
 
 		case '(':
-			token.Type = TokenType_Function_Name
-			addToken(token)
+			prevToken := addToken(token)
+			if !prevToken.IsEmpty() {
+				prevToken.Type = TokenType_Function_Name
+			}
 
 			token.Val = "("
 			token.Type = TokenType_OpenBracket
@@ -227,11 +238,13 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 			addToken(token)
 
 		case ')':
-			tryAssignTypeToPossibleLiteralToken(token)
-			addToken(token)
+			prevToken := addToken(token)
+			tryAssignTypeToPossibleLiteralToken(prevToken)
+
 			token.Val = ")"
 			token.Type = TokenType_CloseBracket
 			token.Loc = runeStartByteIndex
+			addToken(token)
 
 		case '{':
 			addToken(token)
@@ -242,11 +255,13 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 			addToken(token)
 
 		case '}':
-			tryAssignTypeToPossibleLiteralToken(token)
-			addToken(token)
+			prevToken := addToken(token)
+			tryAssignTypeToPossibleLiteralToken(prevToken)
+
 			token.Val = "}"
 			token.Type = TokenType_CloseCurlyBracket
 			token.Loc = runeStartByteIndex
+			addToken(token)
 
 		case '\'':
 			addToken(token)
@@ -257,7 +272,6 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 			// addToken(token)
 
 			inString = true
-			token.Val = ""
 			token.Type = TokenType_String
 			token.Loc = runeStartByteIndex
 

@@ -19,7 +19,7 @@ func TestMain(t *testing.T) {
 					global_search: false,
 				})
 				for 'Hello there, friend! This is Omar'
-				select 'friend'		
+				select 'friend'
 				`,
 			},
 		},
@@ -72,8 +72,7 @@ func TestMain(t *testing.T) {
 			},
 		},
 		{
-			desc:      "Email query",
-			isVerbose: true,
+			desc: "Email query",
 			rl: Regexl{
 				Query: `
 				set_options({
@@ -100,6 +99,27 @@ func TestMain(t *testing.T) {
 						10
 					)
 				`,
+			},
+		},
+		{
+			desc: "Crazy formatting 1",
+			rl: Regexl{
+				Query: `
+			set_options  (  {
+				global_search  : true  ,
+			}	)
+			for 'Hello there, friend! This is Omar'
+			select starts_with( 'Hello'  )        +any_chars (  )+ 'Omar'
+			`,
+			},
+		},
+		{
+			desc:      "Crazy formatting 2 - one line",
+			isVerbose: true,
+			rl: Regexl{
+				Query: `
+				set_options({global_search: true}) for 'Hello there, friend! This is Omar' select starts_with('Hello') + any_chars() + 'Omar'				
+			`,
 			},
 		},
 	}

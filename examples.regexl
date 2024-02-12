@@ -46,13 +46,6 @@ set_options({
 for 'Hello there, friend! This is Omar'
 select starts_with('Hello') + any_chars() + 'Omar'
 
--- /^Hello.*Omar/g
-set_options({
-    global_search: true,
-})
-for 'Hello there, friend! This is Omar'
-select starts_with('Hello') + any_chars() + 'Omar'
-
 -- /Hell(o)*/g
 -- Equivalent to: /Hello*/g
 set_options({
