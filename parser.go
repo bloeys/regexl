@@ -4,22 +4,36 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
 
+//go:generate stringer -type=TokenType
 type TokenType int
+
+func (tt TokenType) MarshalText() (text []byte, err error) {
+	return []byte(tt.String()), nil
+}
+
+var _ fmt.Stringer = TokenType_Unknown
 
 const (
 	TokenType_Unknown TokenType = iota
 	TokenType_Space
 	TokenType_String
+	// TokenType_Single_Quote
 	TokenType_Number
 	TokenType_Operator
 	TokenType_OpenBracket
 	TokenType_CloseBracket
 	TokenType_OpenCurlyBracket
 	TokenType_CloseCurlyBracket
+	TokenType_Colon
+	TokenType_Comma
+	TokenType_Bool
+	TokenType_Plus
+	TokenType_Object_Param_Key
 	TokenType_FunctionName
 )
 
@@ -37,11 +51,15 @@ func (t *Token) MakeEmpty() {
 
 	t.Val = ""
 	t.Type = TokenType_Unknown
-	t.Loc = 0
+	t.Loc = -1
 }
 
 func (t *Token) IsEmpty() bool {
 	return t == nil || (t.Type == TokenType_Unknown && t.Val == "")
+}
+
+func (t *Token) HasLoc() bool {
+	return t.Loc != -1
 }
 
 type Parser struct {
@@ -86,6 +104,19 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 
 	tokens = make([]Token, 0, 50)
 
+	// getToken := func(index int) *Token {
+
+	// 	if len(tokens) == 0 {
+	// 		return nil
+	// 	}
+
+	// 	if index < 0 {
+	// 		return &tokens[len(tokens)+index]
+	// 	}
+
+	// 	return &tokens[index]
+	// }
+
 	addToken := func(t *Token) {
 
 		t.Val = strings.TrimSpace(t.Val)
@@ -100,6 +131,7 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 	inString := false
 	inComment := false
 	token := &Token{}
+	token.MakeEmpty()
 	for runeStartByteIndex, c := range query {
 
 		if inComment {
@@ -119,9 +151,15 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 			}
 
 			if c == '\'' {
-				token.Val += string(c)
-				inString = false
+
 				addToken(token)
+
+				// token.Val = "'"
+				// token.Type = TokenType_Single_Quote
+				// token.Loc = runeStartByteIndex
+				// addToken(token)
+
+				inString = false
 				continue
 			}
 
@@ -147,8 +185,40 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 		}
 
 		switch c {
+
+		case '\t':
+			fallthrough
 		case ' ':
 			addToken(token)
+
+		case ':':
+			token.Type = TokenType_Object_Param_Key
+			addToken(token)
+
+			token.Val = ":"
+			token.Type = TokenType_Colon
+			token.Loc = runeStartByteIndex
+			addToken(token)
+
+		case ',':
+
+			// Try to assign a type to previous value (we assume ',' is only after object param values)
+			if token.Type == TokenType_Unknown {
+
+				trimmedVal := strings.TrimSpace(token.Val)
+				if trimmedVal == "false" || trimmedVal == "true" {
+					token.Type = TokenType_Bool
+				} else if _, err := strconv.ParseFloat(trimmedVal, 64); err == nil {
+					token.Type = TokenType_Number
+				}
+			}
+			addToken(token)
+
+			token.Val = ","
+			token.Type = TokenType_Comma
+			token.Loc = runeStartByteIndex
+			addToken(token)
+
 		case '(':
 			token.Type = TokenType_FunctionName
 			addToken(token)
@@ -166,9 +236,11 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 
 		case '{':
 			addToken(token)
+
 			token.Val = "{"
-			token.Type = TokenType_CloseCurlyBracket
+			token.Type = TokenType_OpenCurlyBracket
 			token.Loc = runeStartByteIndex
+			addToken(token)
 
 		case '}':
 			addToken(token)
@@ -178,11 +250,17 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 
 		case '\n':
 			addToken(token)
+
 		case '\'':
 			addToken(token)
-			inString = true
 
-			token.Val = "'"
+			// token.Val = "'"
+			// token.Type = TokenType_Single_Quote
+			// token.Loc = runeStartByteIndex
+			// addToken(token)
+
+			inString = true
+			token.Val = ""
 			token.Type = TokenType_String
 			token.Loc = runeStartByteIndex
 
@@ -207,6 +285,9 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 
 		default:
 			token.Val += string(c)
+			if !token.HasLoc() {
+				token.Loc = runeStartByteIndex
+			}
 		}
 	}
 
