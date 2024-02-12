@@ -4,64 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 )
 
-//go:generate stringer -type=TokenType
-type TokenType int
-
-func (tt TokenType) MarshalText() (text []byte, err error) {
-	return []byte(tt.String()), nil
-}
-
-var _ fmt.Stringer = TokenType_Unknown
-
-const (
-	TokenType_Unknown TokenType = iota
-	TokenType_Space
-	TokenType_String
-	// TokenType_Single_Quote
-	TokenType_Number
-	TokenType_Operator
-	TokenType_OpenBracket
-	TokenType_CloseBracket
-	TokenType_OpenCurlyBracket
-	TokenType_CloseCurlyBracket
-	TokenType_Colon
-	TokenType_Comma
-	TokenType_Bool
-	TokenType_Plus
-	TokenType_Comment
-	TokenType_Object_Param_Key
-	TokenType_FunctionName
+var (
+	keywords = []string{"for", "select"}
 )
-
-type Token struct {
-	Val  string
-	Type TokenType
-	Loc  int
-}
-
-func (t *Token) MakeEmpty() {
-
-	if t == nil {
-		return
-	}
-
-	t.Val = ""
-	t.Type = TokenType_Unknown
-	t.Loc = -1
-}
-
-func (t *Token) IsEmpty() bool {
-	return t == nil || (t.Type == TokenType_Unknown && t.Val == "")
-}
-
-func (t *Token) HasLoc() bool {
-	return t.Loc != -1
-}
 
 type Parser struct {
 	Query  string
@@ -98,7 +49,7 @@ func ParseQuery(query string) (*regexp.Regexp, error) {
 	b, _ := json.MarshalIndent(tokens, "", "  ")
 
 	if IsVerbose {
-		fmt.Printf("Tokens: %s\n", string(b))
+		fmt.Printf("%d Tokens: %s\n", len(tokens), string(b))
 	}
 
 	return nil, nil
@@ -134,6 +85,27 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 
 		tokens = append(tokens, *t)
 		t.MakeEmpty()
+	}
+
+	/*
+		Try to assign a type to a token that is probably some literal like a string or number, and is no-op if token is already typed.
+
+		Possible callers are:
+		* ',' or '}' of an object param
+		* ')' closing a function
+	*/
+	tryAssignTypeToPossibleLiteralToken := func(t *Token) {
+
+		if t.Type != TokenType_Unknown || t.IsEmpty() {
+			return
+		}
+
+		trimmedVal := strings.TrimSpace(t.Val)
+		if trimmedVal == "false" || trimmedVal == "true" {
+			t.Type = TokenType_Bool
+		} else if _, err := strconv.ParseFloat(trimmedVal, 64); err == nil {
+			t.Type = TokenType_Number
+		}
 	}
 
 	inString := false
@@ -198,9 +170,23 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 
 		switch c {
 
+		// General token 'end' signifiers
+		case '\n':
+			fallthrough
 		case '\t':
 			fallthrough
 		case ' ':
+
+			tryAssignTypeToPossibleLiteralToken(token)
+
+			// Handle keywords
+			if token.Type == TokenType_Unknown {
+
+				if slices.Contains(keywords, token.Val) {
+					token.Type = TokenType_Keyword
+				}
+			}
+
 			addToken(token)
 
 		case ':':
@@ -223,15 +209,7 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 		case ',':
 
 			// Try to assign a type to previous value (this is for when ',' is after an object param value)
-			if token.Type == TokenType_Unknown {
-
-				trimmedVal := strings.TrimSpace(token.Val)
-				if trimmedVal == "false" || trimmedVal == "true" {
-					token.Type = TokenType_Bool
-				} else if _, err := strconv.ParseFloat(trimmedVal, 64); err == nil {
-					token.Type = TokenType_Number
-				}
-			}
+			tryAssignTypeToPossibleLiteralToken(token)
 			addToken(token)
 
 			token.Val = ","
@@ -240,7 +218,7 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 			addToken(token)
 
 		case '(':
-			token.Type = TokenType_FunctionName
+			token.Type = TokenType_Function_Name
 			addToken(token)
 
 			token.Val = "("
@@ -249,6 +227,7 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 			addToken(token)
 
 		case ')':
+			tryAssignTypeToPossibleLiteralToken(token)
 			addToken(token)
 			token.Val = ")"
 			token.Type = TokenType_CloseBracket
@@ -263,13 +242,11 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 			addToken(token)
 
 		case '}':
+			tryAssignTypeToPossibleLiteralToken(token)
 			addToken(token)
 			token.Val = "}"
 			token.Type = TokenType_CloseCurlyBracket
 			token.Loc = runeStartByteIndex
-
-		case '\n':
-			addToken(token)
 
 		case '\'':
 			addToken(token)
@@ -314,7 +291,22 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 		}
 	}
 
-	return tokens, pErr
+	if pErr != nil {
+		return tokens, pErr
+	}
+
+	for i := 0; i < len(tokens); i++ {
+
+		t := &tokens[i]
+		if t.Type == TokenType_Unknown {
+			return tokens, &ParserError{
+				Err: fmt.Errorf("invalid regexl query: found token with type=unknown after tokenization; token=%+v; query=%s", t, p.Query),
+				Loc: t.Loc,
+			}
+		}
+	}
+
+	return tokens, nil
 }
 
 func (p *Parser) GetRuneByByteIndex(index int) (rune, error) {

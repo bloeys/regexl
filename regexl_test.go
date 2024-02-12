@@ -12,7 +12,7 @@ func TestMain(t *testing.T) {
 		rl        Regexl
 	}{
 		{
-			desc: "Simplest query",
+			desc: "Simplest",
 			rl: Regexl{
 				Query: `
 				set_options({
@@ -24,7 +24,7 @@ func TestMain(t *testing.T) {
 			},
 		},
 		{
-			desc: "One func query",
+			desc: "One func",
 			rl: Regexl{
 				Query: `
 				set_options({
@@ -50,8 +50,17 @@ func TestMain(t *testing.T) {
 			},
 		},
 		{
-			desc:      "Combined funcs",
-			isVerbose: true,
+			desc: "Nested funcs",
+			rl: Regexl{
+				Query: `
+				for 'Golang'
+				select ends_with(starts_with('Golang'))
+				-- select starts_and_ends_with('Golang') -- Alternative way of writing it
+				`,
+			},
+		},
+		{
+			desc: "Combined funcs",
 			rl: Regexl{
 				Query: `
 				set_options({
@@ -59,6 +68,37 @@ func TestMain(t *testing.T) {
 				})
 				for 'Hello there, friend! This is Omar'
 				select starts_with('Hello') + any_chars() + 'Omar'
+				`,
+			},
+		},
+		{
+			desc:      "Email query",
+			isVerbose: true,
+			rl: Regexl{
+				Query: `
+				set_options({
+					case_sensitive: false,
+				})
+				for 'some-email@wow.com'
+				select
+					-- Converts to: [A-Z0-9._%+-]+
+					one_plus_of(
+						any_chars_of(from_to('A', 'Z'), from_to(0, 9), '._%+-')
+					) +
+					-- Converts to: @
+					'@' +
+					-- Converts to: [A-Z0-9.-]+
+					one_plus_of(
+						any_chars_of(from_to('A','Z'), from_to(0, 9), '.-')
+					) +
+					-- Converts to: \.
+					'.' +
+					-- Converts to: [A-Z]{2,10}
+					char_count_between(
+						any_chars_of(from_to('A', 'Z')),
+						2,
+						10
+					)
 				`,
 			},
 		},
