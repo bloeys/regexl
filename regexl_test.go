@@ -37,8 +37,7 @@ func TestMain(t *testing.T) {
 			},
 		},
 		{
-			desc:      "Multiple object params",
-			isVerbose: true,
+			desc: "Multiple object params",
 			rl: Regexl{
 				Query: `
 				set_options({
@@ -47,6 +46,19 @@ func TestMain(t *testing.T) {
 				})
 				for 'Hello there, friend! This is Omar'
 				select any_chars_of('is', 'omar') -- Comments work here too
+				`,
+			},
+		},
+		{
+			desc:      "Combined funcs",
+			isVerbose: true,
+			rl: Regexl{
+				Query: `
+				set_options({
+					global_search: true,
+				})
+				for 'Hello there, friend! This is Omar'
+				select starts_with('Hello') + any_chars() + 'Omar'
 				`,
 			},
 		},

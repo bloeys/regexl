@@ -212,6 +212,14 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 			token.Loc = runeStartByteIndex
 			addToken(token)
 
+		case '+':
+			addToken(token)
+
+			token.Val = "+"
+			token.Type = TokenType_Plus
+			token.Loc = runeStartByteIndex
+			addToken(token)
+
 		case ',':
 
 			// Try to assign a type to previous value (this is for when ',' is after an object param value)
