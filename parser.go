@@ -33,6 +33,7 @@ const (
 	TokenType_Comma
 	TokenType_Bool
 	TokenType_Plus
+	TokenType_Comment
 	TokenType_Object_Param_Key
 	TokenType_FunctionName
 )
@@ -63,9 +64,8 @@ func (t *Token) HasLoc() bool {
 }
 
 type Parser struct {
-	Query    string
-	QueryLoc int
-	PError   ParserError
+	Query  string
+	PError ParserError
 }
 
 var _ error = ParserError{}
@@ -86,21 +86,29 @@ func (te ParserError) Error() string {
 
 func ParseQuery(query string) (*regexp.Regexp, error) {
 
-	parser := Parser{}
+	parser := Parser{
+		Query: query,
+	}
 
-	tokens, err := parser.Tokenize(query)
+	tokens, err := parser.Tokenize()
 	if err != nil {
 		return nil, err
 	}
 
 	b, _ := json.MarshalIndent(tokens, "", "  ")
-	fmt.Printf("Tokens: %s\n", string(b))
-	// fmt.Printf("Tokens: %+v\n", tokens)
+
+	if IsVerbose {
+		fmt.Printf("Tokens: %s\n", string(b))
+	}
 
 	return nil, nil
 }
 
-func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
+func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
+
+	if p.Query == "" {
+		return []Token{}, nil
+	}
 
 	tokens = make([]Token, 0, 50)
 
@@ -132,14 +140,18 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 	inComment := false
 	token := &Token{}
 	token.MakeEmpty()
-	for runeStartByteIndex, c := range query {
+	for runeStartByteIndex, c := range p.Query {
 
 		if inComment {
 
 			if c != '\n' {
+				token.Val += string(c)
 				continue
 			}
 
+			// Remove the second '-' of the comment start
+			token.Val = token.Val[1:]
+			addToken(token)
 			inComment = false
 		}
 
@@ -202,7 +214,7 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 
 		case ',':
 
-			// Try to assign a type to previous value (we assume ',' is only after object param values)
+			// Try to assign a type to previous value (this is for when ',' is after an object param value)
 			if token.Type == TokenType_Unknown {
 
 				trimmedVal := strings.TrimSpace(token.Val)
@@ -281,6 +293,9 @@ func (p *Parser) Tokenize(query string) (tokens []Token, pErr *ParserError) {
 				}
 			}
 
+			addToken(token)
+			token.Type = TokenType_Comment
+			token.Loc = runeStartByteIndex
 			inComment = true
 
 		default:

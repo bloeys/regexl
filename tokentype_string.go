@@ -21,13 +21,14 @@ func _() {
 	_ = x[TokenType_Comma-10]
 	_ = x[TokenType_Bool-11]
 	_ = x[TokenType_Plus-12]
-	_ = x[TokenType_Object_Param_Key-13]
-	_ = x[TokenType_FunctionName-14]
+	_ = x[TokenType_Comment-13]
+	_ = x[TokenType_Object_Param_Key-14]
+	_ = x[TokenType_FunctionName-15]
 }
 
-const _TokenType_name = "TokenType_UnknownTokenType_SpaceTokenType_StringTokenType_NumberTokenType_OperatorTokenType_OpenBracketTokenType_CloseBracketTokenType_OpenCurlyBracketTokenType_CloseCurlyBracketTokenType_ColonTokenType_CommaTokenType_BoolTokenType_PlusTokenType_Object_Param_KeyTokenType_FunctionName"
+const _TokenType_name = "TokenType_UnknownTokenType_SpaceTokenType_StringTokenType_NumberTokenType_OperatorTokenType_OpenBracketTokenType_CloseBracketTokenType_OpenCurlyBracketTokenType_CloseCurlyBracketTokenType_ColonTokenType_CommaTokenType_BoolTokenType_PlusTokenType_CommentTokenType_Object_Param_KeyTokenType_FunctionName"
 
-var _TokenType_index = [...]uint16{0, 17, 32, 48, 64, 82, 103, 125, 151, 178, 193, 208, 222, 236, 262, 284}
+var _TokenType_index = [...]uint16{0, 17, 32, 48, 64, 82, 103, 125, 151, 178, 193, 208, 222, 236, 253, 279, 301}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {
