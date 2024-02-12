@@ -81,7 +81,6 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 
 		Returns the last appended token using getToken(-1). The just passed token is returned (its copy appended to the array) if the passed token wasn't empty, otherwise the last appended token is returned.
 		The return can be null if no tokens have been appended
-		or whatever the previous
 	*/
 	addToken := func(t *Token) (latestToken *Token) {
 
