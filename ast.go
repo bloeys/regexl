@@ -1,21 +1,50 @@
 package regexl
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var _ fmt.Stringer = &Ast{}
 
 type Ast struct {
+	Tokens []Token
+	First  *Node
 }
 
-func NewAstFromTokens(tokens []Token) *Ast {
+//
+// Ast structure similar to what the go/ast package does as I really like their setup
+//
 
-	return &Ast{}
+type Node interface {
+	Loc() int
 }
 
-func (a *Ast) GenAst() error {
+type Stmt interface {
+	Node
+	stmt()
+}
+
+type Expr interface {
+	Node
+	expr()
+}
+
+func NewAst(tokens []Token) *Ast {
+
+	ast := &Ast{
+		Tokens: tokens,
+	}
+
+	return ast
+}
+
+func (a *Ast) Gen() error {
+
+	if len(a.Tokens) == 0 {
+		return nil
+	}
 
 	return nil
-
 }
 
 func (a *Ast) String() string {

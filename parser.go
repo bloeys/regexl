@@ -93,8 +93,10 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 		trimmedVal := strings.TrimSpace(t.Val)
 		if trimmedVal == "false" || trimmedVal == "true" {
 			t.Type = TokenType_Bool
+		} else if _, err := strconv.ParseInt(trimmedVal, 10, 64); err == nil {
+			t.Type = TokenType_Int
 		} else if _, err := strconv.ParseFloat(trimmedVal, 64); err == nil {
-			t.Type = TokenType_Number
+			t.Type = TokenType_Float
 		}
 	}
 

@@ -16,7 +16,8 @@ const (
 	TokenType_Space
 	TokenType_String
 	// TokenType_Single_Quote
-	TokenType_Number
+	TokenType_Int
+	TokenType_Float
 	TokenType_Operator
 	TokenType_OpenBracket
 	TokenType_CloseBracket

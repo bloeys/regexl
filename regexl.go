@@ -34,7 +34,7 @@ func (rl *Regexl) Compile() error {
 	}
 
 	// Gen AST
-	ast := NewAstFromTokens(tokens)
+	ast := NewAst(tokens)
 	if IsVerbose {
 		fmt.Printf("AST: %s\n", ast.String())
 	}

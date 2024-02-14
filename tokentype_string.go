@@ -11,25 +11,26 @@ func _() {
 	_ = x[TokenType_Unknown-0]
 	_ = x[TokenType_Space-1]
 	_ = x[TokenType_String-2]
-	_ = x[TokenType_Number-3]
-	_ = x[TokenType_Operator-4]
-	_ = x[TokenType_OpenBracket-5]
-	_ = x[TokenType_CloseBracket-6]
-	_ = x[TokenType_OpenCurlyBracket-7]
-	_ = x[TokenType_CloseCurlyBracket-8]
-	_ = x[TokenType_Colon-9]
-	_ = x[TokenType_Comma-10]
-	_ = x[TokenType_Bool-11]
-	_ = x[TokenType_Plus-12]
-	_ = x[TokenType_Comment-13]
-	_ = x[TokenType_Object_Param-14]
-	_ = x[TokenType_Function_Name-15]
-	_ = x[TokenType_Keyword-16]
+	_ = x[TokenType_Int-3]
+	_ = x[TokenType_Float-4]
+	_ = x[TokenType_Operator-5]
+	_ = x[TokenType_OpenBracket-6]
+	_ = x[TokenType_CloseBracket-7]
+	_ = x[TokenType_OpenCurlyBracket-8]
+	_ = x[TokenType_CloseCurlyBracket-9]
+	_ = x[TokenType_Colon-10]
+	_ = x[TokenType_Comma-11]
+	_ = x[TokenType_Bool-12]
+	_ = x[TokenType_Plus-13]
+	_ = x[TokenType_Comment-14]
+	_ = x[TokenType_Object_Param-15]
+	_ = x[TokenType_Function_Name-16]
+	_ = x[TokenType_Keyword-17]
 }
 
-const _TokenType_name = "TokenType_UnknownTokenType_SpaceTokenType_StringTokenType_NumberTokenType_OperatorTokenType_OpenBracketTokenType_CloseBracketTokenType_OpenCurlyBracketTokenType_CloseCurlyBracketTokenType_ColonTokenType_CommaTokenType_BoolTokenType_PlusTokenType_CommentTokenType_Object_ParamTokenType_Function_NameTokenType_Keyword"
+const _TokenType_name = "TokenType_UnknownTokenType_SpaceTokenType_StringTokenType_IntTokenType_FloatTokenType_OperatorTokenType_OpenBracketTokenType_CloseBracketTokenType_OpenCurlyBracketTokenType_CloseCurlyBracketTokenType_ColonTokenType_CommaTokenType_BoolTokenType_PlusTokenType_CommentTokenType_Object_ParamTokenType_Function_NameTokenType_Keyword"
 
-var _TokenType_index = [...]uint16{0, 17, 32, 48, 64, 82, 103, 125, 151, 178, 193, 208, 222, 236, 253, 275, 298, 315}
+var _TokenType_index = [...]uint16{0, 17, 32, 48, 61, 76, 94, 115, 137, 163, 190, 205, 220, 234, 248, 265, 287, 310, 327}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {
