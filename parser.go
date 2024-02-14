@@ -1,9 +1,7 @@
 package regexl
 
 import (
-	"encoding/json"
 	"fmt"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -15,8 +13,13 @@ var (
 )
 
 type Parser struct {
-	Query  string
-	PError ParserError
+	Query string
+}
+
+func NewParser(query string) *Parser {
+	return &Parser{
+		Query: query,
+	}
 }
 
 var _ error = ParserError{}
@@ -35,27 +38,7 @@ func (te ParserError) Error() string {
 	return fmt.Sprintf("parser error: loc=%d; err=%s", te.Loc, te.Err.Error())
 }
 
-func ParseQuery(query string) (*regexp.Regexp, error) {
-
-	parser := Parser{
-		Query: query,
-	}
-
-	tokens, err := parser.Tokenize()
-	if err != nil {
-		return nil, err
-	}
-
-	b, _ := json.MarshalIndent(tokens, "", "  ")
-
-	if IsVerbose {
-		fmt.Printf("%d Tokens: %s\n", len(tokens), string(b))
-	}
-
-	return nil, nil
-}
-
-func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
+func (p *Parser) Tokenize() (tokens []Token, err error) {
 
 	if p.Query == "" {
 		return []Token{}, nil
@@ -304,22 +287,113 @@ func (p *Parser) Tokenize() (tokens []Token, pErr *ParserError) {
 		}
 	}
 
-	if pErr != nil {
-		return tokens, pErr
+	err = p.ValidateTokens(tokens)
+	return tokens, err
+}
+
+func (p *Parser) ValidateTokens(tokens []Token) error {
+
+	type OpenBracketsList struct {
+		Bracket *Token
+		Next    *OpenBracketsList
+	}
+
+	bracketsCounter := 0
+	openBracketsList := &OpenBracketsList{}
+
+	addOpenBracket := func(b *Token) {
+
+		if b.Type != TokenType_OpenBracket && b.Type != TokenType_OpenCurlyBracket {
+			panic("can't add anything other than open bracket or open curly bracket to open brackets list")
+		}
+
+		// If first is empty use it
+		if openBracketsList.Bracket == nil {
+			openBracketsList.Bracket = b
+			return
+		}
+
+		// Go to end of list and add the new item
+		var curr *OpenBracketsList = openBracketsList
+		for curr.Next != nil {
+			curr = curr.Next
+		}
+
+		curr.Next = &OpenBracketsList{
+			Bracket: b,
+			Next:    nil,
+		}
+	}
+
+	removeLastBracket := func() {
+
+		var curr *OpenBracketsList = openBracketsList
+
+		// Handle one item remaining
+		if curr.Next == nil {
+			curr.Bracket = nil
+		}
+
+		// Remove from end of list
+		for curr.Next != nil && curr.Next.Next != nil {
+			curr = curr.Next
+		}
+
+		curr.Next = nil
 	}
 
 	for i := 0; i < len(tokens); i++ {
 
 		t := &tokens[i]
-		if t.Type == TokenType_Unknown {
-			return tokens, &ParserError{
+
+		switch t.Type {
+
+		case TokenType_Unknown:
+			return &ParserError{
 				Err: fmt.Errorf("invalid regexl query: found token with type=unknown after tokenization; token=%+v; query=%s", t, p.Query),
+				Loc: t.Loc,
+			}
+
+		case TokenType_OpenBracket:
+			fallthrough
+		case TokenType_OpenCurlyBracket:
+			bracketsCounter++
+			addOpenBracket(t)
+
+		case TokenType_CloseBracket:
+			fallthrough
+		case TokenType_CloseCurlyBracket:
+
+			bracketsCounter--
+			removeLastBracket()
+			if bracketsCounter >= 0 {
+				continue
+			}
+
+			if t.Type == TokenType_CloseCurlyBracket {
+				return &ParserError{
+					Err: fmt.Errorf("invalid regexl query: found a closed curly bracket without an opening curly bracket; token=%+v; query=%s", t, p.Query),
+					Loc: t.Loc,
+				}
+			}
+
+			return &ParserError{
+				Err: fmt.Errorf("invalid regexl query: found a closed bracket without an opening bracket; token=%+v; query=%s", t, p.Query),
 				Loc: t.Loc,
 			}
 		}
 	}
 
-	return tokens, nil
+	// Negative case is handled inside the switch case, so this is for brackets that opened but didn't close
+	// We only show the first unclosed bracket, but we can use the tree to show all of them
+	if bracketsCounter != 0 {
+		return &ParserError{
+			Err: fmt.Errorf("invalid regexl query: found an opening bracket without a closing bracket pair; first unclosed bracket token=%+v; query=%s", openBracketsList.Bracket, p.Query),
+			Loc: openBracketsList.Bracket.Loc,
+		}
+	}
+
+	return nil
 }
 
 func (p *Parser) GetRuneByByteIndex(index int) (rune, error) {

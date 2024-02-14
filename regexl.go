@@ -1,5 +1,10 @@
 package regexl
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 var (
 	IsVerbose = false
 )
@@ -10,9 +15,28 @@ type Regexl struct {
 
 func (rl *Regexl) Compile() error {
 
-	_, err := ParseQuery(rl.Query)
+	parser := NewParser(rl.Query)
+
+	// Tokenize
+	tokens, err := parser.Tokenize()
 	if err != nil {
 		return err
+	}
+
+	if IsVerbose {
+
+		b, err := json.MarshalIndent(tokens, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("%d Tokens: %s\n", len(tokens), string(b))
+	}
+
+	// Gen AST
+	ast := NewAstFromTokens(tokens)
+	if IsVerbose {
+		fmt.Printf("AST: %s\n", ast.String())
 	}
 
 	return nil
