@@ -2,7 +2,7 @@
 -- Strings that can match:
 ---- 'Hello there, friend! This is Omar'
 set_options({
-    global_search: false,
+    find_all_matches: false,
 })
 select 'friend'
 
@@ -10,7 +10,7 @@ select 'friend'
 -- Strings that can match:
 ---- 'Hello there, friend! This is Omar'
 set_options({
-    global_search: true,
+    find_all_matches: true,
 })
 select any_strings_of('is', 'Omar')
 
@@ -18,7 +18,7 @@ select any_strings_of('is', 'Omar')
 -- Strings that can match:
 ---- 'Hello there, friend! This is Omar'
 set_options({
-    global_search: true,
+    find_all_matches: true,
     case_sensitive: false,
 })
 select any_chars_of('is', 'omar')
@@ -49,7 +49,7 @@ select starts_and_ends_with('Golang')
 -- Strings that can match:
 ---- 'Hello there, friend! This is Omar'
 set_options({
-    global_search: true,
+    find_all_matches: true,
 })
 select starts_with('Hello') + any_chars() + 'Omar'
 
@@ -60,7 +60,7 @@ select starts_with('Hello') + any_chars() + 'Omar'
 ---- 'Hell there, friend!'
 ---- 'Hellooooo there, friend!'
 set_options({
-    global_search: true,
+    find_all_matches: true,
 })
 select 'Hell' + zero_plus_of('o')
 
@@ -70,7 +70,7 @@ select 'Hell' + zero_plus_of('o')
 ---- 'Hello there, friend!'
 -- 'Helloooo' will match but 'Hell' won't
 set_options({
-    global_search: true,
+    find_all_matches: true,
 })
 select 'Hell' + one_plus_of('o')
 
@@ -79,7 +79,7 @@ select 'Hell' + one_plus_of('o')
 ---- 'Hello'
 ---- 'HelloHelloHello there, friend!'
 set_options({
-    global_search: true,
+    find_all_matches: true,
 })
 select one_plus_of('Hello')
 

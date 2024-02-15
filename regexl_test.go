@@ -16,7 +16,7 @@ func TestMain(t *testing.T) {
 			rl: Regexl{
 				Query: `
 				set_options({
-					global_search: false,
+					find_all_matches: false,
 				})
 				select 'friend'
 				`,
@@ -27,7 +27,7 @@ func TestMain(t *testing.T) {
 			rl: Regexl{
 				Query: `
 				set_options({
-					global_search: true,
+					find_all_matches: true,
 				})
 				-- We can accept any number of inputs here!
 				select any_strings_of('is', 'Omar')
@@ -39,7 +39,7 @@ func TestMain(t *testing.T) {
 			rl: Regexl{
 				Query: `
 				set_options({
-					global_search: true,
+					find_all_matches: true,
 					case_sensitive: false,
 				})
 				select any_chars_of('is', 'omar') -- Comments work here too
@@ -60,7 +60,7 @@ func TestMain(t *testing.T) {
 			rl: Regexl{
 				Query: `
 				set_options({
-					global_search: true,
+					find_all_matches: true,
 				})
 				select starts_with('Hello') + any_chars() + 'Omar'
 				`,
@@ -100,7 +100,7 @@ func TestMain(t *testing.T) {
 			rl: Regexl{
 				Query: `
 			set_options  (  {
-				global_search  : true  ,
+				find_all_matches  : true  ,
 			}	)
 			select starts_with( 'Hello'  )        +any_chars (  )+ 'Omar'
 			`,
@@ -111,7 +111,7 @@ func TestMain(t *testing.T) {
 			isVerbose: true,
 			rl: Regexl{
 				Query: `
-				set_options({global_search: true}) select starts_with('Hello') + any_chars() + 'Omar'				
+				set_options({find_all_matches: true}) select starts_with('Hello') + any_chars() + 'Omar'				
 			`,
 			},
 		},
@@ -119,7 +119,7 @@ func TestMain(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		t.Run(tc.desc, func(t *testing.T) {
+		success := t.Run(tc.desc, func(t *testing.T) {
 
 			IsVerbose = tc.isVerbose
 			err := tc.rl.Compile()
@@ -127,5 +127,9 @@ func TestMain(t *testing.T) {
 				t.Fatalf("Compilation failed. Err=%v; Query=%s\n", err, tc.rl.Query)
 			}
 		})
+
+		if !success {
+			break
+		}
 	}
 }

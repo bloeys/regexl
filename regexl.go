@@ -33,8 +33,17 @@ func (rl *Regexl) Compile() error {
 		fmt.Printf("%d Tokens: %s\n", len(tokens), string(b))
 	}
 
+	if len(tokens) == 0 {
+		return nil
+	}
+
 	// Gen AST
 	ast := NewAst(tokens)
+	err = ast.Gen()
+	if err != nil {
+		return err
+	}
+
 	if IsVerbose {
 		fmt.Printf("AST: %s\n", ast.String())
 	}

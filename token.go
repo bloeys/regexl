@@ -33,10 +33,12 @@ const (
 	TokenType_Keyword
 )
 
+type TokenPos int
+
 type Token struct {
 	Val  string
 	Type TokenType
-	Loc  int
+	Pos  TokenPos
 }
 
 func (t *Token) MakeEmpty() {
@@ -47,13 +49,13 @@ func (t *Token) MakeEmpty() {
 
 	t.Val = ""
 	t.Type = TokenType_Unknown
-	t.Loc = -1
+	t.Pos = -1
 }
 
 func (t *Token) IsEmpty() bool {
-	return t == nil || (t.Type == TokenType_Unknown && t.Val == "" && t.Loc == -1)
+	return t == nil || (t.Type == TokenType_Unknown && t.Val == "" && t.Pos == -1)
 }
 
 func (t *Token) HasLoc() bool {
-	return t.Loc != -1
+	return t.Pos != -1
 }

@@ -22,20 +22,20 @@ func NewParser(query string) *Parser {
 	}
 }
 
-var _ error = ParserError{}
+var _ error = &ParserError{}
 
 type ParserError struct {
 	Err error
-	Loc int
+	Pos TokenPos
 }
 
-func (te ParserError) Error() string {
+func (te *ParserError) Error() string {
 
-	if te.Err == nil {
+	if te == nil || te.Err == nil {
 		return ""
 	}
 
-	return fmt.Sprintf("parser error: loc=%d; err=%s", te.Loc, te.Err.Error())
+	return fmt.Sprintf("parser error: loc=%d; err=%s", te.Pos, te.Err.Error())
 }
 
 func (p *Parser) Tokenize() (tokens []Token, err error) {
@@ -144,7 +144,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 			if err != nil {
 				return tokens, &ParserError{
 					Err: err,
-					Loc: runeStartByteIndex,
+					Pos: TokenPos(runeStartByteIndex),
 				}
 			}
 
@@ -189,7 +189,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 
 			token.Val = ":"
 			token.Type = TokenType_Colon
-			token.Loc = runeStartByteIndex
+			token.Pos = TokenPos(runeStartByteIndex)
 			addToken(token)
 
 		case '+':
@@ -197,7 +197,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 
 			token.Val = "+"
 			token.Type = TokenType_Plus
-			token.Loc = runeStartByteIndex
+			token.Pos = TokenPos(runeStartByteIndex)
 			addToken(token)
 
 		case ',':
@@ -207,7 +207,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 
 			token.Val = ","
 			token.Type = TokenType_Comma
-			token.Loc = runeStartByteIndex
+			token.Pos = TokenPos(runeStartByteIndex)
 			addToken(token)
 
 		case '(':
@@ -218,7 +218,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 
 			token.Val = "("
 			token.Type = TokenType_OpenBracket
-			token.Loc = runeStartByteIndex
+			token.Pos = TokenPos(runeStartByteIndex)
 			addToken(token)
 
 		case ')':
@@ -227,7 +227,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 
 			token.Val = ")"
 			token.Type = TokenType_CloseBracket
-			token.Loc = runeStartByteIndex
+			token.Pos = TokenPos(runeStartByteIndex)
 			addToken(token)
 
 		case '{':
@@ -235,7 +235,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 
 			token.Val = "{"
 			token.Type = TokenType_OpenCurlyBracket
-			token.Loc = runeStartByteIndex
+			token.Pos = TokenPos(runeStartByteIndex)
 			addToken(token)
 
 		case '}':
@@ -244,7 +244,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 
 			token.Val = "}"
 			token.Type = TokenType_CloseCurlyBracket
-			token.Loc = runeStartByteIndex
+			token.Pos = TokenPos(runeStartByteIndex)
 			addToken(token)
 
 		case '\'':
@@ -257,7 +257,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 
 			inString = true
 			token.Type = TokenType_String
-			token.Loc = runeStartByteIndex
+			token.Pos = TokenPos(runeStartByteIndex)
 
 		case '-':
 
@@ -265,26 +265,26 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 			if err != nil {
 				return tokens, &ParserError{
 					Err: err,
-					Loc: runeStartByteIndex,
+					Pos: TokenPos(runeStartByteIndex),
 				}
 			}
 
 			if nextRune != '-' {
 				return tokens, &ParserError{
 					Err: fmt.Errorf("found '-' in an unexpected location. '-' can only be used for comments or in strings"),
-					Loc: runeStartByteIndex,
+					Pos: TokenPos(runeStartByteIndex),
 				}
 			}
 
 			addToken(token)
 			token.Type = TokenType_Comment
-			token.Loc = runeStartByteIndex
+			token.Pos = TokenPos(runeStartByteIndex)
 			inComment = true
 
 		default:
 			token.Val += string(c)
 			if !token.HasLoc() {
-				token.Loc = runeStartByteIndex
+				token.Pos = TokenPos(runeStartByteIndex)
 			}
 		}
 	}
@@ -353,7 +353,7 @@ func (p *Parser) ValidateTokens(tokens []Token) error {
 		case TokenType_Unknown:
 			return &ParserError{
 				Err: fmt.Errorf("invalid regexl query: found token with type=unknown after tokenization; token=%+v; query=%s", t, p.Query),
-				Loc: t.Loc,
+				Pos: t.Pos,
 			}
 
 		case TokenType_OpenBracket:
@@ -375,13 +375,13 @@ func (p *Parser) ValidateTokens(tokens []Token) error {
 			if t.Type == TokenType_CloseCurlyBracket {
 				return &ParserError{
 					Err: fmt.Errorf("invalid regexl query: found a closed curly bracket without an opening curly bracket; token=%+v; query=%s", t, p.Query),
-					Loc: t.Loc,
+					Pos: t.Pos,
 				}
 			}
 
 			return &ParserError{
 				Err: fmt.Errorf("invalid regexl query: found a closed bracket without an opening bracket; token=%+v; query=%s", t, p.Query),
-				Loc: t.Loc,
+				Pos: t.Pos,
 			}
 		}
 	}
@@ -391,7 +391,7 @@ func (p *Parser) ValidateTokens(tokens []Token) error {
 	if bracketsCounter != 0 {
 		return &ParserError{
 			Err: fmt.Errorf("invalid regexl query: found an opening bracket without a closing bracket pair; first unclosed bracket token=%+v; query=%s", openBracketsList.Bracket, p.Query),
-			Loc: openBracketsList.Bracket.Loc,
+			Pos: openBracketsList.Bracket.Pos,
 		}
 	}
 
