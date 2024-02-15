@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	keywords = []string{"for", "select"}
+	keywords = []string{"select"}
 )
 
 type Parser struct {
