@@ -89,15 +89,11 @@ func (gb *GoBackend) nodeToGoRegex(n Node) (out string, err error) {
 	case *FuncExpr:
 		return gb.execFunc(typedNode)
 
-	case *IdentExpr:
-		return typedNode.Name, nil
-
-	// case *KeyValExpr:
+	// case *IdentExpr:
+	// 	return typedNode.Name, nil
 
 	case *LiteralExpr:
 		return typedNode.Value, nil
-
-	// case *ObjectLiteralExpr:
 
 	default:
 		return "", fmt.Errorf("unhandled node type in GoBackend.AstToGoRegex. Node=%+v", n)
@@ -310,7 +306,7 @@ func (gb *GoBackend) stringToBool(str string) (bool, error) {
 
 func (gb *GoBackend) ApplyOptionsToRegexString(regexString string) string {
 
-	if gb.Opts.CaseSensitive {
+	if !gb.Opts.CaseSensitive {
 		regexString += "i"
 	}
 
