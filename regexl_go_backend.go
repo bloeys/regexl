@@ -3,6 +3,7 @@ package regexl
 import (
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 type RegexOptions struct {
@@ -90,7 +91,7 @@ func (gb *GoBackend) nodeToGoRegex(n Node) (out string, err error) {
 		return gb.execFunc(typedNode)
 
 	case *LiteralExpr:
-		return typedNode.Value, nil
+		return gb.escapeString(typedNode.Value), nil
 
 	default:
 		return "", fmt.Errorf("unhandled node type in GoBackend.AstToGoRegex. Node=%+v", n)
@@ -312,4 +313,20 @@ func (gb *GoBackend) ApplyOptionsToRegexString(regexString string) string {
 	}
 
 	return regexString
+}
+
+func (gb *GoBackend) escapeString(original string) string {
+
+	sb := strings.Builder{}
+
+	for _, r := range original {
+
+		if r == '.' || r == '(' || r == ')' || r == '[' || r == ']' || r == '{' || r == '}' || r == '\\' {
+			sb.WriteRune('\\')
+		}
+
+		sb.WriteRune(r)
+	}
+
+	return sb.String()
 }
