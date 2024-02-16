@@ -107,7 +107,21 @@ func TestMain(t *testing.T) {
 			},
 		},
 		{
-			desc:      "Crazy formatting 2 - one line",
+			desc: "Crazy formatting 2",
+			rl: Regexl{
+				Query: `
+			set_options  (  
+				
+				{
+				
+					find_all_matches  : true}	
+				)
+			select starts_with( 'Hello'  )        +any_chars (  )+ 'Omar'
+			`,
+			},
+		},
+		{
+			desc:      "Crazy formatting 3 - one line",
 			isVerbose: true,
 			rl: Regexl{
 				Query: `

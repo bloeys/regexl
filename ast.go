@@ -1,11 +1,12 @@
 package regexl
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
 const (
-	AST_INVALID_TOKEN_INDEX = -1
+	AST_INVALID_INDEX = -1
 )
 
 var _ fmt.Stringer = &Ast{}
@@ -113,16 +114,16 @@ func (e *IdentExpr) StartPos() TokenPos { return e.Pos }
 func (e *IdentExpr) EndPos() TokenPos   { return e.Pos + TokenPos(len(e.Name)) }
 
 type FuncExpr struct {
-	Pos          TokenPos
-	Ident        IdentExpr
-	Args         []Expr
-	OpenBracket  TokenPos
-	CloseBracket TokenPos
+	Pos             TokenPos
+	Ident           IdentExpr
+	Args            []Expr
+	OpenBracketPos  TokenPos
+	CloseBracketPos TokenPos
 }
 
 func (e *FuncExpr) expr()              {}
 func (e *FuncExpr) StartPos() TokenPos { return e.Pos }
-func (e *FuncExpr) EndPos() TokenPos   { return e.CloseBracket + 1 }
+func (e *FuncExpr) EndPos() TokenPos   { return e.CloseBracketPos + 1 }
 
 type BinaryExpr struct {
 	Pos  TokenPos
@@ -145,6 +146,26 @@ type LiteralExpr struct {
 func (e *LiteralExpr) expr()              {}
 func (e *LiteralExpr) StartPos() TokenPos { return e.Pos }
 func (e *LiteralExpr) EndPos() TokenPos   { return e.Pos + TokenPos(len(e.Value)) }
+
+type KeyValExpr struct {
+	Key      Expr
+	Val      Expr
+	ColonPos TokenPos
+}
+
+func (e *KeyValExpr) expr()              {}
+func (e *KeyValExpr) StartPos() TokenPos { return e.Key.StartPos() }
+func (e *KeyValExpr) EndPos() TokenPos   { return e.Val.EndPos() }
+
+type ObjectLiteralExpr struct {
+	OpenCurly  TokenPos
+	CloseCurly TokenPos
+	KeyVals    []KeyValExpr
+}
+
+func (e *ObjectLiteralExpr) expr()              {}
+func (e *ObjectLiteralExpr) StartPos() TokenPos { return e.OpenCurly }
+func (e *ObjectLiteralExpr) EndPos() TokenPos   { return e.CloseCurly + 1 }
 
 func NewAst(tokens []Token) *Ast {
 
@@ -180,7 +201,7 @@ func (a *Ast) parseFrom(tokenIndex int) (node Node, lastProcessedIndex int, err 
 	}
 
 loopLbl:
-	for i := 0; i < len(a.Tokens); i++ {
+	for i := tokenIndex; i < len(a.Tokens); i++ {
 
 		t := &a.Tokens[i]
 
@@ -194,6 +215,8 @@ loopLbl:
 		case TokenType_Int:
 			fallthrough
 		case TokenType_Float:
+			fallthrough
+		case TokenType_Bool:
 			fallthrough
 		case TokenType_String:
 			err = nil
@@ -209,16 +232,23 @@ loopLbl:
 			node, lastProcessedIndex, err = a.parseSelect(i)
 			break loopLbl
 
+		case TokenType_OpenCurlyBracket:
+			node, lastProcessedIndex, err = a.parseObjectLiteral(i)
+			break loopLbl
+
+		case TokenType_Comment:
+			lastProcessedIndex = i
+
 		default:
-			// return nil, AST_INVALID_TOKEN_INDEX, &AstError{
-			// 	Err: fmt.Errorf("only certain functions (e.g. set_options()) and keywords (e.g. select) are allowed at the top-level of a query, but found a token of type '%s'", t.Type),
-			// 	Pos: t.Pos,
-			// }
+			return nil, AST_INVALID_INDEX, &AstError{
+				Err: fmt.Errorf("parseFrom failed because of unhandled token=%+v", t),
+				Pos: t.Pos,
+			}
 		}
 	}
 
 	if err != nil {
-		return nil, AST_INVALID_TOKEN_INDEX, err
+		return nil, AST_INVALID_INDEX, err
 	}
 
 	// Handle binary ops
@@ -227,12 +257,12 @@ loopLbl:
 
 		rhs, rhsLastProcessedIndex, err := a.parseFrom(lastProcessedIndex + 2)
 		if err != nil {
-			return nil, AST_INVALID_TOKEN_INDEX, err
+			return nil, AST_INVALID_INDEX, err
 		}
 
 		lhsExpr, ok := node.(Expr)
 		if !ok {
-			return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+			return nil, AST_INVALID_INDEX, &AstError{
 				Pos: node.StartPos(),
 				Err: fmt.Errorf("left side of binary operator '+' at pos=%d is not an expression. Lhs=%+v", node.StartPos(), node),
 			}
@@ -240,7 +270,7 @@ loopLbl:
 
 		rhsExpr, ok := rhs.(Expr)
 		if !ok {
-			return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+			return nil, AST_INVALID_INDEX, &AstError{
 				Pos: node.StartPos(),
 				Err: fmt.Errorf("right side of binary operator '+' at pos=%d is not an expression. Rhs=%+v", rhs.StartPos(), rhs),
 			}
@@ -262,13 +292,13 @@ func (a *Ast) parseSelect(tokenIndex int) (sStmt *SelectStmt, lastProcessedToken
 
 	selectToken := a.GetToken(tokenIndex)
 	if selectToken == nil {
-		return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+		return nil, AST_INVALID_INDEX, &AstError{
 			Err: fmt.Errorf("failed to find select token using index=%d", tokenIndex),
 		}
 	}
 
 	if selectToken.Type != TokenType_Keyword || selectToken.Val != "select" {
-		return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+		return nil, AST_INVALID_INDEX, &AstError{
 			Err: fmt.Errorf("parseSelect failed because it was invoked on a token at index=%d which is not a select keyword (probably a bug in the code). Token=%+v", tokenIndex, selectToken),
 		}
 	}
@@ -283,20 +313,27 @@ func (a *Ast) parseSelect(tokenIndex int) (sStmt *SelectStmt, lastProcessedToken
 
 		t := &a.Tokens[i]
 
-		node, lastProcessedToken, err := a.parseFrom(i)
+		node, newLastProcessedToken, err := a.parseFrom(i)
 		if err != nil {
-			return nil, AST_INVALID_TOKEN_INDEX, err
+			return nil, AST_INVALID_INDEX, err
+		}
+
+		// No error and no node means we are done
+		if node == nil {
+			lastProcessedToken = newLastProcessedToken
+			break
 		}
 
 		expr, ok := node.(Expr)
 		if !ok {
-			return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+			return nil, AST_INVALID_INDEX, &AstError{
 				Pos: t.Pos,
-				Err: fmt.Errorf("select has a non-expression (i.e. not a function, not a literal like string etc) in front of it. Node after select=%+v", node),
+				Err: fmt.Errorf("select has a non-expression (i.e. not a function, not a literal like string etc) in front of it. Token after select=%+v; Node after select=%+v", t, node),
 			}
 		}
 
 		sStmt.Es = append(sStmt.Es, expr)
+		lastProcessedToken = newLastProcessedToken
 		i = lastProcessedToken
 	}
 
@@ -307,13 +344,13 @@ func (a *Ast) parseFunc(tokenIndex int) (fExpr *FuncExpr, lastProcessedToken int
 
 	funcToken := a.GetToken(tokenIndex)
 	if funcToken == nil {
-		return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+		return nil, AST_INVALID_INDEX, &AstError{
 			Err: fmt.Errorf("failed to find function token using index=%d", tokenIndex),
 		}
 	}
 
 	if funcToken.Type != TokenType_Function_Name {
-		return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+		return nil, AST_INVALID_INDEX, &AstError{
 			Err: fmt.Errorf("parseFunc failed because it was invoked on a token at index=%d which is not a function (probably a bug in the code). Token=%+v", tokenIndex, funcToken),
 		}
 	}
@@ -324,19 +361,19 @@ func (a *Ast) parseFunc(tokenIndex int) (fExpr *FuncExpr, lastProcessedToken int
 			Name: funcToken.Val,
 			Pos:  funcToken.Pos,
 		},
-		Args:         make([]Expr, 0, 5),
-		OpenBracket:  AST_INVALID_TOKEN_INDEX,
-		CloseBracket: AST_INVALID_TOKEN_INDEX,
+		Args:            make([]Expr, 0, 5),
+		OpenBracketPos:  AST_INVALID_INDEX,
+		CloseBracketPos: AST_INVALID_INDEX,
 	}
 
 	openBracketToken := a.GetToken(tokenIndex + 1)
 	if openBracketToken == nil || openBracketToken.Type != TokenType_OpenBracket {
-		return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+		return nil, AST_INVALID_INDEX, &AstError{
 			Pos: fExpr.Ident.StartPos(),
 			Err: fmt.Errorf("expected '(' after function name but found token='%+v'", openBracketToken),
 		}
 	}
-	fExpr.OpenBracket = openBracketToken.Pos
+	fExpr.OpenBracketPos = openBracketToken.Pos
 
 forLoopLbl:
 	for i := tokenIndex + 2; i < len(a.Tokens); i++ {
@@ -346,38 +383,149 @@ forLoopLbl:
 		switch t.Type {
 
 		case TokenType_CloseBracket:
-			fExpr.CloseBracket = t.Pos
+			fExpr.CloseBracketPos = t.Pos
 			lastProcessedToken = i
 			break forLoopLbl
 
 		default:
 			node, lastProcessedToken, err := a.parseFrom(i)
 			if err != nil {
-				return nil, AST_INVALID_TOKEN_INDEX, err
+				return nil, AST_INVALID_INDEX, err
 			}
 
 			expr, ok := node.(Expr)
 			if !ok {
-				return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+				return nil, AST_INVALID_INDEX, &AstError{
 					Pos: t.Pos,
 					Err: fmt.Errorf("expected expression to be returned within arguments of a function call, but found node=%+v", node),
 				}
 			}
 
-			// @TODO Handle '+' in function arguments
+			// Consume the comma
+			nextT := a.GetToken(lastProcessedToken + 1)
+			if nextT == nil || (nextT.Type != TokenType_Comma && nextT.Type != TokenType_CloseBracket) {
+				return nil, AST_INVALID_INDEX, &AstError{
+					Pos: t.Pos,
+					Err: fmt.Errorf("expected ',' or ')' after function argument at node=%+v pos=%d but found token=%+v", node, t.Pos, nextT),
+				}
+			}
+
+			if nextT.Type == TokenType_Comma {
+				lastProcessedToken++
+			}
+
 			fExpr.Args = append(fExpr.Args, expr)
 			i = lastProcessedToken
 		}
 	}
 
-	if fExpr.CloseBracket == AST_INVALID_TOKEN_INDEX {
-		return nil, AST_INVALID_TOKEN_INDEX, &AstError{
+	if fExpr.CloseBracketPos == AST_INVALID_INDEX {
+		return nil, AST_INVALID_INDEX, &AstError{
 			Pos: funcToken.Pos,
 			Err: fmt.Errorf("function of name=%s at pos=%d does not have a closing bracket", funcToken.Val, funcToken.Pos),
 		}
 	}
 
 	return fExpr, lastProcessedToken, nil
+}
+
+func (a *Ast) parseObjectLiteral(tokenIndex int) (oLExpr *ObjectLiteralExpr, lastProcessedToken int, err error) {
+
+	oLToken := a.GetToken(tokenIndex)
+	if oLToken == nil {
+		return nil, AST_INVALID_INDEX, &AstError{
+			Err: fmt.Errorf("failed to find object literal token using index=%d", tokenIndex),
+		}
+	}
+
+	if oLToken.Type != TokenType_OpenCurlyBracket {
+		return nil, AST_INVALID_INDEX, &AstError{
+			Err: fmt.Errorf("parseObjectLiteral failed because it was invoked on a token at index=%d which is not an object literal (probably a bug in the code). Token=%+v", tokenIndex, oLToken),
+		}
+	}
+
+	oLExpr = &ObjectLiteralExpr{
+		OpenCurly:  oLToken.Pos,
+		CloseCurly: AST_INVALID_INDEX,
+		KeyVals:    make([]KeyValExpr, 0, 5),
+	}
+
+loopLbl:
+	for i := tokenIndex + 1; i < len(a.Tokens); i++ {
+
+		t := &a.Tokens[i]
+
+		switch t.Type {
+
+		case TokenType_CloseCurlyBracket:
+			oLExpr.CloseCurly = t.Pos
+			lastProcessedToken = i
+			break loopLbl
+
+		case TokenType_Object_Param:
+
+			colonToken := a.GetToken(i + 1)
+			if colonToken == nil || colonToken.Type != TokenType_Colon {
+				return nil, AST_INVALID_INDEX, &AstError{
+					Pos: t.Pos,
+					Err: fmt.Errorf("expected colon after object param=%s at pos=%d, but found token=%+v", t.Val, t.Pos, colonToken),
+				}
+			}
+
+			valNode, lastProcessedTokenAfterVal, err := a.parseFrom(i + 2)
+			if err != nil {
+				return nil, AST_INVALID_INDEX, err
+			}
+
+			valExpr, ok := valNode.(Expr)
+			if !ok {
+				return nil, AST_INVALID_INDEX, &AstError{
+					Pos: t.Pos,
+					Err: fmt.Errorf("expected value of object param=%s at pos=%d to be an experssion, but found node=%+v", t.Val, t.Pos, valNode),
+				}
+			}
+
+			// Consume comma
+			nextT := a.GetToken(lastProcessedTokenAfterVal + 1)
+			if nextT == nil || (nextT.Type != TokenType_Comma && nextT.Type != TokenType_CloseCurlyBracket) {
+				return nil, AST_INVALID_INDEX, &AstError{
+					Pos: t.Pos,
+					Err: fmt.Errorf("expected ',' or '}' after value of object param=%s at pos=%d, but found token=%+v", t.Val, t.Pos, nextT),
+				}
+			}
+
+			if nextT.Type == TokenType_Comma {
+				lastProcessedTokenAfterVal++
+			}
+
+			oLExpr.KeyVals = append(oLExpr.KeyVals, KeyValExpr{
+				Key: &IdentExpr{
+					Pos:  t.Pos,
+					Name: t.Val,
+				},
+				Val:      valExpr,
+				ColonPos: colonToken.Pos,
+			})
+
+			lastProcessedToken = lastProcessedTokenAfterVal
+			i = lastProcessedToken
+
+		case TokenType_Comment:
+			lastProcessedToken = i
+
+		default:
+			return nil, AST_INVALID_INDEX, &AstError{
+				Pos: t.Pos,
+				Err: fmt.Errorf("unexpected token when parsing object params of object=%+v. Unexpected token=%+v", oLExpr, t),
+			}
+		}
+	}
+
+	if err != nil {
+		return nil, AST_INVALID_INDEX, err
+	}
+
+	return oLExpr, lastProcessedToken, nil
 }
 
 func (a *Ast) GetToken(index int) *Token {
@@ -395,5 +543,10 @@ func (a *Ast) GetToken(index int) *Token {
 
 func (a *Ast) String() string {
 	// @TODO
-	return ""
+	b, err := json.MarshalIndent(a, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+
+	return string(b)
 }
