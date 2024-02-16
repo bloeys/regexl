@@ -36,13 +36,73 @@ func TestMain(t *testing.T) {
 		{
 			desc: "Multiple object params",
 			rl: Regexl{
-				PrintAstTree: true,
 				Query: `
 				set_options({
 					find_all_matches: true,
 					case_sensitive: false,
 				})
 				select any_chars_of('is', 'omar') -- Comments work here too
+				`,
+			},
+		},
+		{
+			desc: "Func: starts_with",
+			rl: Regexl{
+				Query: `
+				-- /^friend/i
+				-- Strings that can match:
+				---- 'Friend, how are you?'
+				set_options({
+					case_sensitive: false,
+				})
+				select starts_with('friend')
+				`,
+			},
+		},
+		{
+			desc: "Func: ends_with",
+			rl: Regexl{
+				Query: `
+				-- /omar$/i
+				-- Strings that can match:
+				---- 'Hello there, friend! This is Omar'
+				set_options({
+					case_sensitive: false,
+				})
+				select ends_with('omar')
+				`,
+			},
+		},
+		{
+			desc: "Func: zero_plus_of",
+			rl: Regexl{
+				Query: `
+				-- /Hell(o)*/g
+				-- Equivalent to: /Hello*/g
+				-- Strings that can match:
+				---- 'Hello there, friend!'
+				---- 'Hell there, friend!'
+				---- 'Hellooooo there, friend!'
+				set_options({
+					find_all_matches: true,
+				})
+				select 'Hell' + zero_plus_of('o')
+				`,
+			},
+		},
+		{
+			desc: "Func: one_plus_of",
+			rl: Regexl{
+				Query: `
+				-- /Hell(o)+/g
+				-- Equivalent to: /Hello+/g
+				-- Strings that can match:
+				---- 'Hello there, friend!'
+				-- 'Helloooo' will match but 'Hell' won't
+				set_options({
+					find_all_matches: true,
+				})
+				select 'Hell' + one_plus_of('o')
 				`,
 			},
 		},
@@ -69,7 +129,6 @@ func TestMain(t *testing.T) {
 		{
 			desc: "Email query",
 			rl: Regexl{
-				PrintAstTree: true,
 				Query: `
 				set_options({
 					case_sensitive: false,
@@ -135,7 +194,7 @@ func TestMain(t *testing.T) {
 
 		success := t.Run(tc.desc, func(t *testing.T) {
 
-			err := tc.rl.Compile()
+			_, err := tc.rl.Compile()
 			if err != nil {
 				t.Fatalf("Compilation failed. Err=%v; Query=%s\n", err, tc.rl.Query)
 			}

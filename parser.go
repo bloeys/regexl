@@ -344,11 +344,25 @@ func (p *Parser) ValidateTokens(tokens []Token) error {
 		curr.Next = nil
 	}
 
+	selectCounter := 0
 	for i := 0; i < len(tokens); i++ {
 
 		t := &tokens[i]
 
 		switch t.Type {
+
+		case TokenType_Keyword:
+
+			if t.Val == "select" {
+
+				selectCounter++
+				if selectCounter > 1 {
+					return &ParserError{
+						Err: fmt.Errorf("invalid regexl query: found multiple 'select' keywords while only one is allowed; token=%+v; query=%s", t, p.Query),
+						Pos: t.Pos,
+					}
+				}
+			}
 
 		case TokenType_Unknown:
 			return &ParserError{
@@ -392,6 +406,12 @@ func (p *Parser) ValidateTokens(tokens []Token) error {
 		return &ParserError{
 			Err: fmt.Errorf("invalid regexl query: found an opening bracket without a closing bracket pair; first unclosed bracket token=%+v; query=%s", openBracketsList.Bracket, p.Query),
 			Pos: openBracketsList.Bracket.Pos,
+		}
+	}
+
+	if selectCounter == 0 {
+		return &ParserError{
+			Err: fmt.Errorf("invalid regexl query: 'select' keyword is required but wasn't found; query=%s", p.Query),
 		}
 	}
 

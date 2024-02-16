@@ -120,7 +120,7 @@ func (e *LiteralExpr) StartPos() TokenPos { return e.Pos }
 func (e *LiteralExpr) EndPos() TokenPos   { return e.Pos + TokenPos(len(e.Value)) }
 
 type KeyValExpr struct {
-	Key      Expr
+	Key      IdentExpr
 	Val      Expr
 	ColonPos TokenPos
 }
@@ -471,7 +471,7 @@ loopLbl:
 			}
 
 			oLExpr.KeyVals = append(oLExpr.KeyVals, KeyValExpr{
-				Key: &IdentExpr{
+				Key: IdentExpr{
 					Pos:  t.Pos,
 					Name: t.Val,
 				},
@@ -549,7 +549,7 @@ func (a *Ast) print(n Node, lvl int) {
 
 	case *KeyValExpr:
 		a.printStringAtLvl("key-value pair", lvl)
-		a.print(typedNode.Key, lvl+1)
+		a.print(&typedNode.Key, lvl+1)
 		a.print(typedNode.Val, lvl+1)
 
 	case *LiteralExpr:
@@ -562,7 +562,7 @@ func (a *Ast) print(n Node, lvl int) {
 		}
 
 	default:
-		panic(fmt.Errorf("unhandled node type in ast.Print. Node=%+v", n))
+		panic(fmt.Errorf("unhandled node type in ast.PrintTree. Node=%+v", n))
 	}
 }
 
