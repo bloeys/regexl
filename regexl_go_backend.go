@@ -89,9 +89,6 @@ func (gb *GoBackend) nodeToGoRegex(n Node) (out string, err error) {
 	case *FuncExpr:
 		return gb.execFunc(typedNode)
 
-	// case *IdentExpr:
-	// 	return typedNode.Name, nil
-
 	case *LiteralExpr:
 		return typedNode.Value, nil
 
