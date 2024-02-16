@@ -1,15 +1,12 @@
 package regexl
 
 import (
-	"encoding/json"
 	"fmt"
 )
 
 const (
 	AST_INVALID_INDEX = -1
 )
-
-var _ fmt.Stringer = &Ast{}
 
 type Ast struct {
 	Tokens []Token
@@ -52,31 +49,6 @@ type Stmt interface {
 	Node
 	stmt()
 }
-
-// QueryStmt is used as the root node and pos is the position of the first statement
-type QueryStmt struct {
-	Pos        TokenPos
-	Statements []Stmt
-}
-
-func (s *QueryStmt) stmt()              {}
-func (s *QueryStmt) StartPos() TokenPos { return s.Pos }
-func (s *QueryStmt) EndPos() TokenPos {
-
-	if len(s.Statements) == 0 {
-		return s.Pos + 1
-	}
-
-	return s.Statements[len(s.Statements)-1].EndPos()
-}
-
-type ExprStmt struct {
-	E Expr
-}
-
-func (s *ExprStmt) stmt()              {}
-func (s *ExprStmt) StartPos() TokenPos { return s.E.StartPos() }
-func (s *ExprStmt) EndPos() TokenPos   { return s.E.EndPos() }
 
 type SelectStmt struct {
 	Pos  TokenPos
@@ -541,12 +513,66 @@ func (a *Ast) GetToken(index int) *Token {
 	return &a.Tokens[index]
 }
 
-func (a *Ast) String() string {
-	// @TODO
-	b, err := json.MarshalIndent(a, "", "  ")
-	if err != nil {
-		panic(err)
+func (a *Ast) PrintTree() {
+
+	fmt.Print("\nAST Tree:\n")
+	for i := 0; i < len(a.Nodes); i++ {
+		a.print(a.Nodes[i], 0)
+	}
+	fmt.Print("\n")
+}
+
+func (a *Ast) print(n Node, lvl int) {
+
+	switch typedNode := n.(type) {
+
+	case *SelectStmt:
+		a.printStringAtLvl("select", lvl)
+
+		for i := 0; i < len(typedNode.Es); i++ {
+			a.print(typedNode.Es[i], lvl+1)
+		}
+
+	case *BinaryExpr:
+		a.printStringAtLvl(typedNode.Type.String(), lvl)
+		a.print(typedNode.Lhs, lvl+1)
+		a.print(typedNode.Rhs, lvl+1)
+
+	case *FuncExpr:
+		a.printStringAtLvl(typedNode.Ident.Name, lvl)
+		for i := 0; i < len(typedNode.Args); i++ {
+			a.print(typedNode.Args[i], lvl+1)
+		}
+
+	case *IdentExpr:
+		a.printStringAtLvl(typedNode.Name, lvl)
+
+	case *KeyValExpr:
+		a.printStringAtLvl("key-value pair", lvl)
+		a.print(typedNode.Key, lvl+1)
+		a.print(typedNode.Val, lvl+1)
+
+	case *LiteralExpr:
+		a.printStringAtLvl(typedNode.Value, lvl)
+
+	case *ObjectLiteralExpr:
+		a.printStringAtLvl("object", lvl)
+		for i := 0; i < len(typedNode.KeyVals); i++ {
+			a.print(&typedNode.KeyVals[i], lvl+1)
+		}
+
+	default:
+		panic(fmt.Errorf("unhandled node type in ast.Print. Node=%+v", n))
+	}
+}
+
+func (a *Ast) printStringAtLvl(s string, lvl int) {
+
+	finalString := "|"
+	for i := 0; i < lvl; i++ {
+		finalString += "   |"
 	}
 
-	return string(b)
+	finalString += "-- " + s + "\n"
+	fmt.Print(finalString)
 }

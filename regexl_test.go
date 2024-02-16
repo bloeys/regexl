@@ -7,9 +7,8 @@ import (
 func TestMain(t *testing.T) {
 
 	testCases := []struct {
-		desc      string
-		isVerbose bool
-		rl        Regexl
+		desc string
+		rl   Regexl
 	}{
 		{
 			desc: "Simplest",
@@ -37,6 +36,7 @@ func TestMain(t *testing.T) {
 		{
 			desc: "Multiple object params",
 			rl: Regexl{
+				PrintAstTree: true,
 				Query: `
 				set_options({
 					find_all_matches: true,
@@ -69,6 +69,7 @@ func TestMain(t *testing.T) {
 		{
 			desc: "Email query",
 			rl: Regexl{
+				PrintAstTree: true,
 				Query: `
 				set_options({
 					case_sensitive: false,
@@ -121,8 +122,7 @@ func TestMain(t *testing.T) {
 			},
 		},
 		{
-			desc:      "Crazy formatting 3 - one line",
-			isVerbose: true,
+			desc: "Crazy formatting 3 - one line",
 			rl: Regexl{
 				Query: `
 				set_options({find_all_matches: true}) select starts_with('Hello') + any_chars() + 'Omar'				
@@ -135,7 +135,6 @@ func TestMain(t *testing.T) {
 
 		success := t.Run(tc.desc, func(t *testing.T) {
 
-			IsVerbose = tc.isVerbose
 			err := tc.rl.Compile()
 			if err != nil {
 				t.Fatalf("Compilation failed. Err=%v; Query=%s\n", err, tc.rl.Query)

@@ -5,12 +5,13 @@ import (
 	"fmt"
 )
 
-var (
-	IsVerbose = false
-)
-
 type Regexl struct {
 	Query string
+
+	// Debug options
+	PrintTokens  bool
+	PrintAstJson bool
+	PrintAstTree bool
 }
 
 func (rl *Regexl) Compile() error {
@@ -23,7 +24,7 @@ func (rl *Regexl) Compile() error {
 		return err
 	}
 
-	if IsVerbose {
+	if rl.PrintTokens {
 
 		b, err := json.MarshalIndent(tokens, "", "  ")
 		if err != nil {
@@ -44,8 +45,12 @@ func (rl *Regexl) Compile() error {
 		return err
 	}
 
-	if IsVerbose {
-		fmt.Printf("AST: %s\n", ast.String())
+	if rl.PrintAstJson {
+		fmt.Printf("AST JSON: %+v\n", ast.Nodes)
+	}
+
+	if rl.PrintAstTree {
+		ast.PrintTree()
 	}
 
 	return nil
