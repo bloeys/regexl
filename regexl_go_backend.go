@@ -51,9 +51,13 @@ func (gb *GoBackend) AstToGoRegex(ast *Ast) (*regexp.Regexp, string, error) {
 		}
 	}
 
-	regexString = gb.ApplyOptionsToRegexString("/" + regexString + "/")
+	regexString = gb.ApplyOptionsToRegexString(regexString)
 	regexp, err := regexp.Compile(regexString)
-	return regexp, regexString, err
+	if err != nil {
+		return regexp, regexString, fmt.Errorf("compiling regexp failed. Query=%s; Err=%s", regexString, err.Error())
+	}
+
+	return regexp, regexString, nil
 }
 
 func (gb *GoBackend) nodeToGoRegex(n Node) (out string, err error) {
@@ -306,15 +310,20 @@ func (gb *GoBackend) stringToBool(str string) (bool, error) {
 
 func (gb *GoBackend) ApplyOptionsToRegexString(regexString string) string {
 
+	flagsString := "(?"
 	if !gb.Opts.CaseSensitive {
-		regexString += "i"
+		flagsString += "i"
 	}
 
-	if gb.Opts.FindAllMatches {
-		regexString += "g"
-	}
+	// In Go regex, 'g' flag doesn't exist, rather finding one or many is controlled by the regex.Regexp function used.
+	// For example, for Go regex '(?i)case', Regexp.FindString("casecase") returns 'case',
+	// while Regexp.FindAllString("casecase") returns ["case", "case"].
+	//
+	// if gb.Opts.FindAllMatches {
+	// 	flagsString += "g"
+	// }
 
-	return regexString
+	return flagsString + ")" + regexString
 }
 
 func (gb *GoBackend) escapeString(original string) string {

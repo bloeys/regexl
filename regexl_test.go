@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+// @TODO: Add 1+ matching strings for each positive case to be tested with Regexp.MatchString
+
 func TestMain(t *testing.T) {
 
 	testCases := []struct {
@@ -22,7 +24,7 @@ func TestMain(t *testing.T) {
 				select 'friend'
 				`,
 			},
-			expectedRegex: "/friend/i",
+			expectedRegex: "(?i)friend",
 		},
 		{
 			desc: "One func",
@@ -35,7 +37,7 @@ func TestMain(t *testing.T) {
 				select any_strings_of('is', 'Omar')
 				`,
 			},
-			expectedRegex: "/is|Omar/ig",
+			expectedRegex: "(?i)is|Omar",
 		},
 		{
 			desc: "Multiple object params",
@@ -48,7 +50,7 @@ func TestMain(t *testing.T) {
 				select any_chars_of('is', 'omar') // Comments work here too
 				`,
 			},
-			expectedRegex: "/[isomar]/ig",
+			expectedRegex: "(?i)[isomar]",
 		},
 		{
 			desc: "Func: starts_with",
@@ -63,7 +65,7 @@ func TestMain(t *testing.T) {
 				select starts_with('friend')
 				`,
 			},
-			expectedRegex: "/^friend/i",
+			expectedRegex: "(?i)^friend",
 		},
 		{
 			desc: "Func: ends_with",
@@ -78,7 +80,7 @@ func TestMain(t *testing.T) {
 				select ends_with('omar')
 				`,
 			},
-			expectedRegex: "/omar$/i",
+			expectedRegex: "(?i)omar$",
 		},
 		{
 			desc: "Func: zero_plus_of",
@@ -96,7 +98,7 @@ func TestMain(t *testing.T) {
 				select 'Hell' + zero_plus_of('o')
 				`,
 			},
-			expectedRegex: "/Hell(?:o)*/ig",
+			expectedRegex: "(?i)Hell(?:o)*",
 		},
 		{
 			desc: "Func: one_plus_of",
@@ -113,7 +115,7 @@ func TestMain(t *testing.T) {
 				select 'Hell' + one_plus_of('o')
 				`,
 			},
-			expectedRegex: "/Hell(?:o)+/ig",
+			expectedRegex: "(?i)Hell(?:o)+",
 		},
 		{
 			desc: "Nested funcs",
@@ -126,10 +128,10 @@ func TestMain(t *testing.T) {
 				select ends_with(starts_with('Golang'))
 				`,
 			},
-			expectedRegex: "/^Golang$/",
+			expectedRegex: "(?)^Golang$",
 		},
 		{
-			desc: "Combined funcs",
+			desc: "Combined funcs 1",
 			rl: Regexl{
 				Query: `
 				set_options({
@@ -138,7 +140,20 @@ func TestMain(t *testing.T) {
 				select starts_with('Hello') + any_chars() + 'Omar'
 				`,
 			},
-			expectedRegex: "/^Hello.*Omar/ig",
+			expectedRegex: "(?i)^Hello.*Omar",
+		},
+		{
+			desc: "Combined funcs 2",
+			rl: Regexl{
+				Query: `
+				set_options({
+					find_all_matches: true,
+					case_sensitive: false,
+				})
+				select starts_with('Hello there, ') + one_plus_of(any_chars_of(from_to('A', 'Z'), '.!-'))
+				`,
+			},
+			expectedRegex: "(?i)^Hello there, (?:[A-Z\\.!-])+",
 		},
 		{
 			desc: "Email query",
@@ -168,8 +183,7 @@ func TestMain(t *testing.T) {
 					)
 				`,
 			},
-			// /([A-Z0-9\._%+-])+@([A-Z0-9\.-])+\.[A-Z]{2,10}/i
-			expectedRegex: "/(?:[A-Z0-9\\._%+-])+@(?:[A-Z0-9\\.-])+\\.[A-Z]{2,10}/i",
+			expectedRegex: "(?i)(?:[A-Z0-9\\._%+-])+@(?:[A-Z0-9\\.-])+\\.[A-Z]{2,10}",
 		},
 		{
 			desc: "Crazy formatting 1",
@@ -181,7 +195,7 @@ func TestMain(t *testing.T) {
 			select starts_with( 'Hello'  )        +any_chars (  )+ 'Omar'
 			`,
 			},
-			expectedRegex: "/^Hello.*Omar/ig",
+			expectedRegex: "(?i)^Hello.*Omar",
 		},
 		{
 			desc: "Crazy formatting 2",
@@ -196,7 +210,7 @@ func TestMain(t *testing.T) {
 			select starts_with( 'Hello'  )        +any_chars (  )+ 'Omar'
 			`,
 			},
-			expectedRegex: "/^Hello.*Omar/ig",
+			expectedRegex: "(?i)^Hello.*Omar",
 		},
 		{
 			desc: "Crazy formatting 3 - one line",
@@ -205,7 +219,7 @@ func TestMain(t *testing.T) {
 				set_options({find_all_matches: true}) select starts_with('Hello') + any_chars() + 'Omar'				
 			`,
 			},
-			expectedRegex: "/^Hello.*Omar/ig",
+			expectedRegex: "(?i)^Hello.*Omar",
 		},
 
 		//

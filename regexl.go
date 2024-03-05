@@ -6,6 +6,7 @@ import (
 	"regexp"
 )
 
+// @TODO: remove or make something nicer
 // Debug options
 var (
 	PrintTokens  bool
@@ -27,6 +28,8 @@ func NewRegexl(query string) *Regexl {
 	return rl
 }
 
+// Compile tries to compile the query within this Regexl object and then sets Regexl.CompiledRegexp.
+// Regexl.CompiledRegexp is only set if no error is found, otherwise the error is returned and Regexl.CompiledRegexp is unchanged.
 func (rl *Regexl) Compile() error {
 
 	parser := NewParser(rl.Query)
@@ -76,6 +79,7 @@ func (rl *Regexl) Compile() error {
 	return nil
 }
 
+// MustCompile compiles the query within this regexl object by calling Regexl.Compile and panics if an error is thrown
 func (rl *Regexl) MustCompile() *Regexl {
 
 	err := rl.Compile()

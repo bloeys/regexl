@@ -67,7 +67,10 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 	*/
 	addToken := func(t *Token) (latestToken *Token) {
 
-		t.Val = strings.TrimSpace(t.Val)
+		if t.Type != TokenType_String {
+			t.Val = strings.TrimSpace(t.Val)
+		}
+
 		if t.IsEmpty() {
 			return getToken(-1)
 		}
