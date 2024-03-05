@@ -4,7 +4,7 @@
 set_options({
     find_all_matches: false,
 })
-select 'friend';
+select 'friend'
 
 // /is|Omar/g
 // Strings that can match:
@@ -12,7 +12,7 @@ select 'friend';
 set_options({
     find_all_matches: true,
 })
-select any_strings_of('is', 'Omar');
+select any_strings_of('is', 'Omar')
 
 // /[isomar]/gi
 // Strings that can match:
@@ -21,7 +21,7 @@ set_options({
     find_all_matches: true,
     case_sensitive: false,
 })
-select any_chars_of('is', 'omar');
+select any_chars_of('is', 'omar')
 
 // /^friend/i
 // Strings that can match:
@@ -29,7 +29,7 @@ select any_chars_of('is', 'omar');
 set_options({
     case_sensitive: false,
 })
-select starts_with('friend');
+select starts_with('friend')
 
 // /omar$/i
 // Strings that can match:
@@ -37,12 +37,12 @@ select starts_with('friend');
 set_options({
     case_sensitive: false,
 })
-select ends_with('omar');
+select ends_with('omar')
 
 // /^Golang$/
 // Strings that can match:
 //   'Golang'
-select starts_and_ends_with('Golang');
+select starts_and_ends_with('Golang')
 // select ends_with(starts_with('Golang')) // Alternative way of writing it
 
 // /^Hello.*Omar/g
@@ -51,7 +51,7 @@ select starts_and_ends_with('Golang');
 set_options({
     find_all_matches: true,
 })
-select starts_with('Hello') + any_chars() + 'Omar';
+select starts_with('Hello') + any_chars() + 'Omar'
 
 // /Hell(o)*/g
 // Equivalent to: /Hello*/g
@@ -62,7 +62,7 @@ select starts_with('Hello') + any_chars() + 'Omar';
 set_options({
     find_all_matches: true,
 })
-select 'Hell' + zero_plus_of('o');
+select 'Hell' + zero_plus_of('o')
 
 // /Hell(o)+/g
 // Equivalent to: /Hello+/g
@@ -72,7 +72,7 @@ select 'Hell' + zero_plus_of('o');
 set_options({
     find_all_matches: true,
 })
-select 'Hell' + one_plus_of('o');
+select 'Hell' + one_plus_of('o')
 
 // /(Hello)+/g
 // Strings that can match:
@@ -81,19 +81,19 @@ select 'Hell' + one_plus_of('o');
 set_options({
     find_all_matches: true,
 })
-select one_plus_of('Hello');
+select one_plus_of('Hello')
 
 // [A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,10}
 // Strings that can match:
 //   'some-email@wow.com'
 set_options({
     case_sensitive: false,
-});
-select;
-// Converts to: [A-Z0-9._%+-]+
-one_plus_of(
-    any_chars_of(from_to('A', 'Z'), from_to(0, 9), '._%+-')
-) +
+})
+select
+    // Converts to: [A-Z0-9._%+-]+
+    one_plus_of(
+        any_chars_of(from_to('A', 'Z'), from_to(0, 9), '._%+-')
+    ) +
     // Converts to: @
     '@' +
     // Converts to: [A-Z0-9.-]+
@@ -107,4 +107,4 @@ one_plus_of(
         any_chars_of(from_to('A', 'Z')),
         2,
         10
-    );
+    )
