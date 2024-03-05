@@ -10,6 +10,7 @@ func TestMain(t *testing.T) {
 		desc          string
 		rl            Regexl
 		expectedRegex string
+		shouldError   bool
 	}{
 		{
 			desc: "Simplest",
@@ -206,6 +207,70 @@ func TestMain(t *testing.T) {
 			},
 			expectedRegex: "/^Hello.*Omar/ig",
 		},
+
+		//
+		// Negative test cases
+		//
+		{
+			desc: "Invalid 1",
+			rl: Regexl{
+				Query: `
+				set_options({
+					find_all_matches: false,
+				})
+				select 'friend
+				`,
+			},
+			shouldError: true,
+		},
+		{
+			desc: "Invalid 2",
+			rl: Regexl{
+				Query: `
+				set_options({
+					find_all_matches:,
+				})
+				select 'friend'
+				`,
+			},
+			shouldError: true,
+		},
+		{
+			desc: "Invalid 3",
+			rl: Regexl{
+				Query: `
+				set_options({
+					find_all_matches: galse,
+				})
+				select 'friend'
+				`,
+			},
+			shouldError: true,
+		},
+		{
+			desc: "Invalid 4",
+			rl: Regexl{
+				Query: `
+				set_options({
+					find_all_matches: false,
+				})
+				'friend'
+				`,
+			},
+			shouldError: true,
+		},
+		{
+			desc: "Invalid 5",
+			rl: Regexl{
+				Query: `
+				set_options({
+					find_all_matches: false,
+				})
+				select
+				`,
+			},
+			shouldError: true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -214,7 +279,18 @@ func TestMain(t *testing.T) {
 
 			err := tc.rl.Compile()
 			if err != nil {
+
+				if tc.shouldError {
+					return
+				}
+
 				t.Errorf("Compilation failed. Err=%v; Query=%s\n", err, tc.rl.Query)
+				return
+			}
+
+			if tc.shouldError {
+				t.Errorf("Compilation should have thrown an error but didn't. Query=%s\n", tc.rl.Query)
+				return
 			}
 
 			if tc.expectedRegex != tc.rl.CompiledRegexp.String() {
