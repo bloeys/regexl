@@ -95,7 +95,7 @@ func TestMain(t *testing.T) {
 				select 'Hell' + zero_plus_of('o')
 				`,
 			},
-			expectedRegex: "/Hell(o)*/ig",
+			expectedRegex: "/Hell(?:o)*/ig",
 		},
 		{
 			desc: "Func: one_plus_of",
@@ -112,7 +112,7 @@ func TestMain(t *testing.T) {
 				select 'Hell' + one_plus_of('o')
 				`,
 			},
-			expectedRegex: "/Hell(o)+/ig",
+			expectedRegex: "/Hell(?:o)+/ig",
 		},
 		{
 			desc: "Nested funcs",
@@ -168,7 +168,7 @@ func TestMain(t *testing.T) {
 				`,
 			},
 			// /([A-Z0-9\._%+-])+@([A-Z0-9\.-])+\.[A-Z]{2,10}/i
-			expectedRegex: "/([A-Z0-9\\._%+-])+@([A-Z0-9\\.-])+\\.[A-Z]{2,10}/i",
+			expectedRegex: "/(?:[A-Z0-9\\._%+-])+@(?:[A-Z0-9\\.-])+\\.[A-Z]{2,10}/i",
 		},
 		{
 			desc: "Crazy formatting 1",

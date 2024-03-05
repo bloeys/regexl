@@ -227,7 +227,8 @@ func (gb *GoBackend) execFunc(fExpr *FuncExpr) (out string, err error) {
 			return "", err
 		}
 
-		out += "(" + regexString + ")*"
+		// Use a non capturing group for performance
+		out += "(?:" + regexString + ")*"
 
 	case "one_plus_of":
 
@@ -240,7 +241,7 @@ func (gb *GoBackend) execFunc(fExpr *FuncExpr) (out string, err error) {
 			return "", err
 		}
 
-		out += "(" + regexString + ")+"
+		out += "(?:" + regexString + ")+"
 
 	case "from_to":
 
