@@ -113,7 +113,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 				continue
 			}
 
-			// Remove the second '-' of the comment start
+			// Remove the second '/' of the comment start
 			token.Val = token.Val[1:]
 			addToken(token)
 			inComment = false
@@ -259,7 +259,7 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 			token.Type = TokenType_String
 			token.Pos = TokenPos(runeStartByteIndex)
 
-		case '-':
+		case '/':
 
 			nextRune, err := p.GetNextRuneByByteIndex(runeStartByteIndex)
 			if err != nil {
@@ -269,9 +269,9 @@ func (p *Parser) Tokenize() (tokens []Token, err error) {
 				}
 			}
 
-			if nextRune != '-' {
+			if nextRune != '/' {
 				return tokens, &ParserError{
-					Err: fmt.Errorf("found '-' in an unexpected location. '-' can only be used for comments or in strings"),
+					Err: fmt.Errorf("found '/' in an unexpected location. '/' can only be used for comments or in strings"),
 					Pos: TokenPos(runeStartByteIndex),
 				}
 			}

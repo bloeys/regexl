@@ -28,7 +28,7 @@ func TestMain(t *testing.T) {
 				set_options({
 					find_all_matches: true,
 				})
-				-- We can accept any number of inputs here!
+				// We can accept any number of inputs here!
 				select any_strings_of('is', 'Omar')
 				`,
 			},
@@ -41,7 +41,7 @@ func TestMain(t *testing.T) {
 					find_all_matches: true,
 					case_sensitive: false,
 				})
-				select any_chars_of('is', 'omar') -- Comments work here too
+				select any_chars_of('is', 'omar') // Comments work here too
 				`,
 			},
 		},
@@ -49,9 +49,9 @@ func TestMain(t *testing.T) {
 			desc: "Func: starts_with",
 			rl: Regexl{
 				Query: `
-				-- /^friend/i
-				-- Strings that can match:
-				---- 'Friend, how are you?'
+				// /^friend/i
+				// Strings that can match:
+				//   'Friend, how are you?'
 				set_options({
 					case_sensitive: false,
 				})
@@ -63,9 +63,9 @@ func TestMain(t *testing.T) {
 			desc: "Func: ends_with",
 			rl: Regexl{
 				Query: `
-				-- /omar$/i
-				-- Strings that can match:
-				---- 'Hello there, friend! This is Omar'
+				// /omar$/i
+				// Strings that can match:
+				//   'Hello there, friend! This is Omar'
 				set_options({
 					case_sensitive: false,
 				})
@@ -77,12 +77,12 @@ func TestMain(t *testing.T) {
 			desc: "Func: zero_plus_of",
 			rl: Regexl{
 				Query: `
-				-- /Hell(o)*/g
-				-- Equivalent to: /Hello*/g
-				-- Strings that can match:
-				---- 'Hello there, friend!'
-				---- 'Hell there, friend!'
-				---- 'Hellooooo there, friend!'
+				// /Hell(o)*/g
+				// Equivalent to: /Hello*/g
+				// Strings that can match:
+				//   'Hello there, friend!'
+				//   'Hell there, friend!'
+				//   'Hellooooo there, friend!'
 				set_options({
 					find_all_matches: true,
 				})
@@ -94,11 +94,11 @@ func TestMain(t *testing.T) {
 			desc: "Func: one_plus_of",
 			rl: Regexl{
 				Query: `
-				-- /Hell(o)+/g
-				-- Equivalent to: /Hello+/g
-				-- Strings that can match:
-				---- 'Hello there, friend!'
-				-- 'Helloooo' will match but 'Hell' won't
+				// /Hell(o)+/g
+				// Equivalent to: /Hello+/g
+				// Strings that can match:
+				//   'Hello there, friend!'
+				// 'Helloooo' will match but not 'Hell'
 				set_options({
 					find_all_matches: true,
 				})
@@ -111,7 +111,7 @@ func TestMain(t *testing.T) {
 			rl: Regexl{
 				Query: `
 				select ends_with(starts_with('Golang'))
-				-- select starts_and_ends_with('Golang') -- Alternative way of writing it
+				// select starts_and_ends_with('Golang') // Alternative way of writing it
 				`,
 			},
 		},
@@ -134,19 +134,19 @@ func TestMain(t *testing.T) {
 					case_sensitive: false,
 				})
 				select
-					-- Converts to: [A-Z0-9._%+-]+
+					// Converts to: [A-Z0-9._%+-]+
 					one_plus_of(
 						any_chars_of(from_to('A', 'Z'), from_to(0, 9), '._%+-')
 					) +
-					-- Converts to: @
+					// Converts to: @
 					'@' +
-					-- Converts to: [A-Z0-9.-]+
+					// Converts to: [A-Z0-9.-]+
 					one_plus_of(
 						any_chars_of(from_to('A','Z'), from_to(0, 9), '.-')
 					) +
-					-- Converts to: \.
+					// Converts to: \.
 					'.' +
-					-- Converts to: [A-Z]{2,10}
+					// Converts to: [A-Z]{2,10}
 					char_count_between(
 						any_chars_of(from_to('A', 'Z')),
 						2,
