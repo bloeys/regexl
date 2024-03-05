@@ -30,7 +30,7 @@ set_options({
 select starts_with('friend')
 ```
 
-- `/Hell(o)*/g` is equivalent to the regexl:
+- `/Hello*/g` is equivalent to the regexl:
 
 ``` sql
 set_options({

@@ -86,7 +86,7 @@ func TestMain(t *testing.T) {
 			desc: "Func: zero_plus_of",
 			rl: Regexl{
 				Query: `
-				// /Hell(o)*/g
+				// /Hello*/g
 				// Equivalent to: /Hello*/g
 				// Strings that can match:
 				//   'Hello there, friend!'

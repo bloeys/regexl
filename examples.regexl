@@ -53,7 +53,7 @@ set_options({
 })
 select starts_with('Hello') + any_chars() + 'Omar'
 
-// /Hell(o)*/g
+// /Hello*/g
 // Equivalent to: /Hello*/g
 // Strings that can match:
 //   'Hello there, friend!'
