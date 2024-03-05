@@ -15,10 +15,10 @@ type GoBackend struct {
 	Opts RegexOptions
 }
 
-func (gb *GoBackend) AstToGoRegex(ast *Ast) (*regexp.Regexp, error) {
+func (gb *GoBackend) AstToGoRegex(ast *Ast) (*regexp.Regexp, string, error) {
 
 	if len(ast.Nodes) == 0 {
-		return nil, fmt.Errorf("ast must have at least one node")
+		return nil, "", fmt.Errorf("ast must have at least one node")
 	}
 
 	var err error
@@ -31,28 +31,29 @@ func (gb *GoBackend) AstToGoRegex(ast *Ast) (*regexp.Regexp, error) {
 		case *FuncExpr:
 
 			if typedNode.Ident.Name != "set_options" {
-				return nil, fmt.Errorf("only the function 'set_options' can be used at the top level")
+				return nil, "", fmt.Errorf("only the function 'set_options' can be used at the top level")
 			}
 
 			_, err := gb.execFunc(typedNode)
 			if err != nil {
-				return nil, err
+				return nil, "", err
 			}
 
 		case *SelectStmt:
 
 			regexString, err = gb.nodeToGoRegex(typedNode)
 			if err != nil {
-				return nil, err
+				return nil, "", err
 			}
 
 		default:
-			return nil, fmt.Errorf("only 'select' and the 'set_options' function can be at the top level")
+			return nil, "", fmt.Errorf("only 'select' and the 'set_options' function can be at the top level")
 		}
 	}
 
 	regexString = gb.ApplyOptionsToRegexString("/" + regexString + "/")
-	return regexp.Compile(regexString)
+	regexp, err := regexp.Compile(regexString)
+	return regexp, regexString, err
 }
 
 func (gb *GoBackend) nodeToGoRegex(n Node) (out string, err error) {

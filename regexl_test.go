@@ -7,8 +7,9 @@ import (
 func TestMain(t *testing.T) {
 
 	testCases := []struct {
-		desc string
-		rl   Regexl
+		desc          string
+		rl            Regexl
+		expectedRegex string
 	}{
 		{
 			desc: "Simplest",
@@ -20,6 +21,7 @@ func TestMain(t *testing.T) {
 				select 'friend'
 				`,
 			},
+			expectedRegex: "/friend/i",
 		},
 		{
 			desc: "One func",
@@ -32,6 +34,7 @@ func TestMain(t *testing.T) {
 				select any_strings_of('is', 'Omar')
 				`,
 			},
+			expectedRegex: "/is|Omar/ig",
 		},
 		{
 			desc: "Multiple object params",
@@ -44,6 +47,7 @@ func TestMain(t *testing.T) {
 				select any_chars_of('is', 'omar') // Comments work here too
 				`,
 			},
+			expectedRegex: "/[isomar]/ig",
 		},
 		{
 			desc: "Func: starts_with",
@@ -58,6 +62,7 @@ func TestMain(t *testing.T) {
 				select starts_with('friend')
 				`,
 			},
+			expectedRegex: "/^friend/i",
 		},
 		{
 			desc: "Func: ends_with",
@@ -72,6 +77,7 @@ func TestMain(t *testing.T) {
 				select ends_with('omar')
 				`,
 			},
+			expectedRegex: "/omar$/i",
 		},
 		{
 			desc: "Func: zero_plus_of",
@@ -89,6 +95,7 @@ func TestMain(t *testing.T) {
 				select 'Hell' + zero_plus_of('o')
 				`,
 			},
+			expectedRegex: "/Hell(o)*/ig",
 		},
 		{
 			desc: "Func: one_plus_of",
@@ -105,15 +112,20 @@ func TestMain(t *testing.T) {
 				select 'Hell' + one_plus_of('o')
 				`,
 			},
+			expectedRegex: "/Hell(o)+/ig",
 		},
 		{
 			desc: "Nested funcs",
 			rl: Regexl{
 				Query: `
+				set_options({
+					case_sensitive: true,
+				})
+				// Alternative: select starts_and_ends_with('Golang')
 				select ends_with(starts_with('Golang'))
-				// select starts_and_ends_with('Golang') // Alternative way of writing it
 				`,
 			},
+			expectedRegex: "/^Golang$/",
 		},
 		{
 			desc: "Combined funcs",
@@ -125,6 +137,7 @@ func TestMain(t *testing.T) {
 				select starts_with('Hello') + any_chars() + 'Omar'
 				`,
 			},
+			expectedRegex: "/^Hello.*Omar/ig",
 		},
 		{
 			desc: "Email query",
@@ -154,6 +167,8 @@ func TestMain(t *testing.T) {
 					)
 				`,
 			},
+			// /([A-Z0-9\._%+-])+@([A-Z0-9\.-])+\.[A-Z]{2,10}/i
+			expectedRegex: "/([A-Z0-9\\._%+-])+@([A-Z0-9\\.-])+\\.[A-Z]{2,10}/i",
 		},
 		{
 			desc: "Crazy formatting 1",
@@ -165,6 +180,7 @@ func TestMain(t *testing.T) {
 			select starts_with( 'Hello'  )        +any_chars (  )+ 'Omar'
 			`,
 			},
+			expectedRegex: "/^Hello.*Omar/ig",
 		},
 		{
 			desc: "Crazy formatting 2",
@@ -179,6 +195,7 @@ func TestMain(t *testing.T) {
 			select starts_with( 'Hello'  )        +any_chars (  )+ 'Omar'
 			`,
 			},
+			expectedRegex: "/^Hello.*Omar/ig",
 		},
 		{
 			desc: "Crazy formatting 3 - one line",
@@ -187,6 +204,7 @@ func TestMain(t *testing.T) {
 				set_options({find_all_matches: true}) select starts_with('Hello') + any_chars() + 'Omar'				
 			`,
 			},
+			expectedRegex: "/^Hello.*Omar/ig",
 		},
 	}
 
@@ -194,9 +212,13 @@ func TestMain(t *testing.T) {
 
 		success := t.Run(tc.desc, func(t *testing.T) {
 
-			_, err := tc.rl.Compile()
+			err := tc.rl.Compile()
 			if err != nil {
-				t.Fatalf("Compilation failed. Err=%v; Query=%s\n", err, tc.rl.Query)
+				t.Errorf("Compilation failed. Err=%v; Query=%s\n", err, tc.rl.Query)
+			}
+
+			if tc.expectedRegex != tc.rl.CompiledRegexp.String() {
+				t.Errorf("Compiled regex does not equal expected regex. Expected=%s; Compiled=%s\n", tc.expectedRegex, tc.rl.CompiledRegexp.String())
 			}
 		})
 

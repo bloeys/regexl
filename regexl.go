@@ -6,13 +6,16 @@ import (
 	"regexp"
 )
 
-type Regexl struct {
-	Query string
-
-	// Debug options
+// Debug options
+var (
 	PrintTokens  bool
 	PrintAstJson bool
 	PrintAstTree bool
+)
+
+type Regexl struct {
+	Query          string
+	CompiledRegexp *regexp.Regexp
 }
 
 func NewRegexl(query string) *Regexl {
@@ -24,52 +27,61 @@ func NewRegexl(query string) *Regexl {
 	return rl
 }
 
-func (rl *Regexl) Compile() (*regexp.Regexp, error) {
+func (rl *Regexl) Compile() error {
 
 	parser := NewParser(rl.Query)
 
 	// Tokenize
 	tokens, err := parser.Tokenize()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if rl.PrintTokens {
+	if PrintTokens {
 
 		b, err := json.MarshalIndent(tokens, "", "  ")
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		fmt.Printf("%d Tokens: %s\n", len(tokens), string(b))
 	}
 
 	if len(tokens) == 0 {
-		return nil, fmt.Errorf("empty query is not allowed")
+		return fmt.Errorf("empty query is not allowed")
 	}
 
 	// Gen AST
 	ast := NewAst(tokens)
 	err = ast.Gen()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if rl.PrintAstJson {
+	if PrintAstJson {
 		fmt.Printf("AST JSON: %+v\n", ast.Nodes)
 	}
 
-	if rl.PrintAstTree {
+	if PrintAstTree {
 		ast.PrintTree()
 	}
 
 	gb := &GoBackend{}
-	goRegexp, err := gb.AstToGoRegex(ast)
+	goRegexp, _, err := gb.AstToGoRegex(ast)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	fmt.Printf("Regex: %s\n\n", goRegexp.String())
+	rl.CompiledRegexp = goRegexp
+	return nil
+}
 
-	return goRegexp, err
+func (rl *Regexl) MustCompile() *Regexl {
+
+	err := rl.Compile()
+	if err != nil {
+		panic(err)
+	}
+
+	return rl
 }
