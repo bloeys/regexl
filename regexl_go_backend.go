@@ -261,7 +261,7 @@ func (gb *GoBackend) execFunc(fExpr *FuncExpr) (out string, err error) {
 
 		out += firstParamRegexString + "-" + secondParamRegexString
 
-	case "char_count_between":
+	case "count_between":
 
 		if len(fExpr.Args) != 3 {
 			return "", fmt.Errorf("function '%s' must have three arguments but was passed %d arguments", fExpr.Ident.Name, len(fExpr.Args))

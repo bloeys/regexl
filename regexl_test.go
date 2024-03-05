@@ -161,7 +161,7 @@ func TestMain(t *testing.T) {
 					// Converts to: \.
 					'.' +
 					// Converts to: [A-Z]{2,10}
-					char_count_between(
+					count_between(
 						any_chars_of(from_to('A', 'Z')),
 						2,
 						10
