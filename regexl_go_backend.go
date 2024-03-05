@@ -11,6 +11,7 @@ type RegexOptions struct {
 	FindAllMatches bool
 }
 
+// GoBackend produces valid Go regex strings, based on the rules here: https://pkg.go.dev/regexp/syntax
 type GoBackend struct {
 	Opts RegexOptions
 }
