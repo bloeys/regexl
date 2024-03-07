@@ -39,8 +39,8 @@ set_options({
     find_all_matches: true,
 })
 
---// This '--' is to help the syntax highlighter :)
---// The '+' performs a simple concatenation, as all functions return strings
+//-- This '--' is to help the syntax highlighter :)
+//-- The '+' performs a simple concatenation, as all functions return strings
 select 'Hell' + zero_plus_of('o')
 ```
 
@@ -50,8 +50,8 @@ select 'Hell' + zero_plus_of('o')
 set_options({
     case_sensitive: false,
 })
---// Functions can be nested, as outputs are strings.
---// Alternative regexl: select starts_and_ends_with('Golang')
+//-- Functions can be nested, as outputs are strings.
+//-- Alternative regexl: select starts_and_ends_with('Golang')
 select ends_with(starts_with('Golang'))
 ```
 
@@ -62,7 +62,7 @@ set_options({
     find_all_matches: true,
     case_sensitive: false,
 })
---// Can also be: select any_chars_of('abcd')
+//-- Can also be: select any_chars_of('abcd')
 select any_chars_of('abc', 'd')
 ```
 
@@ -73,7 +73,7 @@ set_options({
     find_all_matches: true,
     case_sensitive: false,
 })
---// Can also be: select any_chars_of('abcd')
+//-- Can also be: select any_chars_of('abcd')
 select any_chars_of(from_to('A', 'Z'), from_to(0, 9))
 ```
 
@@ -84,19 +84,19 @@ set_options({
     case_sensitive: false,
 })
 select
-    --// Converts to: [A-Z0-9._%+-]+
+    //-- Converts to: [A-Z0-9._%+-]+
     one_plus_of(
         any_chars_of(from_to('A', 'Z'), from_to(0, 9), '._%+-')
     ) +
-    --// Converts to: @
+    //-- Converts to: @
     '@' +
-    --// Converts to: [A-Z0-9.-]+
+    //-- Converts to: [A-Z0-9.-]+
     one_plus_of(
         any_chars_of(from_to('A', 'Z'), from_to(0, 9), '.-')
     ) +
-    --// Converts to: \.
+    //-- Converts to: \.
     '.' +
-    --// Converts to: [A-Z]{2,10}
+    //-- Converts to: [A-Z]{2,10}
     count_between(
         any_chars_of(from_to('A', 'Z')),
         2,
