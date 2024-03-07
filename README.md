@@ -9,6 +9,8 @@ You can read about the reasoning for creating Regexl [here](https://bloeys.com/t
 - [Regexl](#regexl)
   - [Regexl Query Examples](#regexl-query-examples)
   - [Usage in Go](#usage-in-go)
+  - [Technical Details](#technical-details)
+  - [Todo](#todo)
 
 ## Regexl Query Examples
 
@@ -130,3 +132,62 @@ func main() {
 	fmt.Printf("Produced regex: %s\nHas match: %v\n", rl.CompiledRegexp.String(), hasMatch)
 }
 ```
+
+## Technical Details
+
+The Regexl code is that of a very simple compiler, where the general steps involved are:
+
+1. Input query text is tokenized (implemented by `parser.go`)
+2. Tokens are used to create an Abstract Syntax Tree (AST) (implemented by `ast.go`)
+3. The AST is fed into a 'backend' that outputs a specific regex string (e.g. Go regex) (implemented by `regex_go_backend.go`)
+
+To explain the above, lets look at how the following query is compiled:
+
+```sql
+select starts_with('hello')
+```
+
+By tokenization we mean turning the input string into higher level segments, where each segment is split by some separator like a space, a bracket, and so on.
+In the above query you will get the following tokens:
+
+- Token value: `select`; Type: `keyword`
+- Token value: `starts_with`; Type: `function name`
+- Token value: `(`; Type: `open bracket`
+- Token value: `hello`; Type: `string`
+- Token value: `)`; Type: `close bracket`
+
+With this list of tokens, an AST is created. An Abstract Syntax Tree represents the structure of a program as a tree, where the parent nodes have a dependency on the children nodes.
+For example, if function A calls B, then this function call node becomes a child of A, and the arguments of this call are children of the function call node.
+
+In our query, the linear tokens list produces this AST tree:
+
+```text
+|-- select
+|   |-- starts_with
+|   |   |-- hello
+```
+
+With the AST in place, we can traverse the tree and generate some output.
+In normal programming languages (e.g. C, Go, Python, etc...) the final output would be machine code, assembly, or perhaps byte code to be interpreted.
+
+In Regexl, the output is some specific regex like Go-compatible regex, python-compatible regex, and so on (regex syntax and features differ between implementations).
+
+The Go regex produced for our example Regexl query is:
+
+```text
+(?i)^hello
+```
+
+Equivalent to the more common regex expression:
+
+```text
+/^hello/i
+```
+
+The nice thing about this setup is that to support a new regex implementation all one has to do is implement a new backend (step 3), while tokenization and AST generation are reused as-is.
+
+## Todo
+
+- Become feature complete with Go regex
+- Better error messages
+- More test cases
