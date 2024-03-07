@@ -2,7 +2,7 @@
 
 Regexl is a high level language for regex that can be used in any project as a simple library.
 
-You can read about its creation history [here](https://bloeys.com/blog/regexl-a-high-level-language-for-regex/).
+You can read about the reasoning for creating Regexl [here](https://bloeys.com/thoughts/thought-2-regex-is-like-assembly/).
 
 **Table of contents:**
 

@@ -62,7 +62,13 @@ func (rl *Regexl) Compile() error {
 	}
 
 	if PrintAstJson {
-		fmt.Printf("AST JSON: %+v\n", ast.Nodes)
+
+		b, err := json.MarshalIndent(ast.Nodes, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("AST JSON: %s\n", b)
 	}
 
 	if PrintAstTree {
