@@ -7,10 +7,15 @@ You can read about the reasoning for creating Regexl [here](https://bloeys.com/t
 **Table of contents:**
 
 - [Regexl](#regexl)
+  - [Playground](#playground)
   - [Regexl Query Examples](#regexl-query-examples)
   - [Usage in Go](#usage-in-go)
   - [Technical Details](#technical-details)
   - [Todo](#todo)
+
+## Playground
+
+There is a (WASM based) playground where you can play with Regexl [here](https://regexl-playground.bloeys.com/).
 
 ## Regexl Query Examples
 
